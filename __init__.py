@@ -1,6 +1,6 @@
 __all__ = ['fileOps', 'control', 'constants', 'structOps']
 
-from nLib.fileOps import *
-from nLib.constants import *
-from nLib.control import *
-from nLib.structOps import *
+from olcaoPy.fileOps import *
+from olcaoPy.constants import *
+from olcaoPy.control import *
+from olcaoPy.structOps import *
