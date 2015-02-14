@@ -67,7 +67,7 @@ class Structure(object):
                 self.atomCoors = fo.SklCoors(skl)
                 self.atomNames = fo.SklAtomNames(skl)
                 self.spaceGrp  = fo.SklSpaceGrp(skl)
-                self.supercell = fo.SklSupercell
+                self.supercell = fo.SklSupercell(skl)
                 self.cellType  = fo.SklCellType(skl)
 
                 # calculate the real lattice matrix and its inverse
@@ -142,7 +142,12 @@ class Structure(object):
         string += "supercell "
         string += (" ".join(str(x) for x in self.supercell))
         string += "\n"
-        string += self.cellType
+        if self.cellType == "F":
+            string += "full"
+        elif self.cellType == "P":
+            string += "prim"
+        else:
+            sys.exit("Unknow cell type: " + str(self.cellType))
         f = open(fileName, "w")
         f.write(string)
         f.close()
@@ -171,7 +176,6 @@ class Structure(object):
             string += (elementalNames[i][:1].upper() + elementalNames[i][1:])
             string += " "
             string += (" ".join(str(x) for x in self.atomCoors[i]))
-
         f = open(fileName, 'w')
         f.write(string)
         f.close()
@@ -181,8 +185,8 @@ class Structure(object):
         '''
         mutate moves the atoms in a structure by a given distance, mag, in
         a random direction. the probablity that any given atom will be moves
-        is given by the argument 'prob', where 0.0 means 0% chance that  the atom
-        will not move, and 1.0 means a 100% chance that a given atom will move.
+        is given by the argument 'prob', where 0.0 means %0 chance that  the atom
+        will not move, and 1.0 means a %100 chance that a given atom will move.
         '''
         self.toCart()
         for i in xrange(self.numAtoms):
@@ -193,7 +197,6 @@ class Structure(object):
                 y = mag * math.sin(theta) * math.sin(phi)
                 z = mag * math.cos(theta)
                 self.atomCoors[i] += [x, y, z]
-
         self.applyPBC()
         self.spaceGrp = "1_a"
         return self
