@@ -670,3 +670,41 @@ def printSymFns():
     f.write(string)
     f.close
     return
+
+def computeCrystalParams(coors, buf = 10):
+    '''
+    This function computs the a, b, and c lattice vectors for a set
+    of coordinates passed to it. It is assumed that the system is in
+    a orthorhombic box and therefore alpha, beta, and gamma are set
+    to 90 degrees, and a, b, and c lattice vectors map to x, y, and z
+    axes.
+    '''
+    cellInfo = np.zeros(6)
+    cellInfo[0] = coors.max(axis=0)[0] - coors.min(axis=0)[0] + buf
+    cellInfo[1] = coors.max(axis=0)[1] - coors.min(axis=0)[1] + buf
+    cellInfo[2] = coors.max(axis=0)[2] - coors.min(axis=0)[2] + buf
+    cellInfo[3] = 90.0
+    cellInfo[4] = 90.0
+    cellInfo[5] = 90.0
+    return cellInfo
+
+def shiftXyzCenter(coors, buf = 10):
+    '''
+    This function will linearly transelate all the atom along the
+    orthogonal axes, to make sure that the system as a whole is 
+    centered in the simulation box. The atoms in the system will 
+    have a buffer from the edges of the simulation box, and 
+    therefore this is only applicable to molecular systems or
+    clusters. Do not use this subroutine directly unless you know what
+    you are doing.
+    '''
+    numAtoms = len(coors)
+    shiftedCoors = np.zeros(shape=(numAtoms, 3))
+    xmin = coors.min(axis=0)[0]
+    ymin = coors.min(axis=0)[1]
+    zmin = coors.min(axis=0)[2]
+    for i in xrange(len(coors)):
+        shiftedCoors[i][0] = coors[i][0] - xmin + buf/2.0
+        shiftedCoors[i][1] = coors[i][1] - ymin + buf/2.0
+        shiftedCoors[i][2] = coors[i][2] - zmin + buf/2.0
+    return shiftedCoors
