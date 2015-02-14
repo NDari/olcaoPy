@@ -11,7 +11,7 @@ import random
 
 class Structure(object):
 
-    def __init__(self, fileName = None):
+    def __init__(self, fileName = None, buf = 10.0):
         """
         This object takes a file with the handle "fileName", reads it, and
         breaks it up into useful information and stores them into an object.
@@ -46,6 +46,9 @@ class Structure(object):
 
         If the fileName is not passed to the contructor, then an empty
         structure object is made.
+
+        The "buf" parameter is used when the structure is contructed from
+        an ".xyz" object.
                     
         
         """
@@ -73,6 +76,24 @@ class Structure(object):
                 # calculate the real lattice matrix and its inverse
                 self.rlm = so.makeRealLattice(self.cellInfo)
                 self.mlr = so.makeRealLatticeInv(self.cellInfo)
+            elif extention == ".xyz":
+                # read the file into a 2D string array.
+                xyz = fo.readFile(fileName)
+
+                # get the information.
+                self.title = fo.XyzComment(xyz)
+                self.coordType = "C" # always cartesian in an xyz file
+                self.numAtoms = fo.XyzNumAtoms(xyz)
+                self.atomCoors = fo.XyzCoors(xyz)
+                self.atomNames = fo.XyzAtomNames(xyz)
+                self.spaceGrp = "1_a" # no symmetry info in xyz files.
+                self.supercell = np.ones(3) # no super cell.
+                self.CellType = "F" # always "full" type in xyz files.
+
+                self.cellInfo = so.computeCellInfo(self.atomCoors, buf)
+                self.rlm = so.makeRealLattice(self.cellInfo)
+                self.mlr = so.makeRealLatticeInv(self.cellInfo)
+                self.atomCoors = so.shiftXyzCenter(self.atomCoors, buf)
             else:
                 sys.exit("Unknown file extention: " + str(extention))
         else:

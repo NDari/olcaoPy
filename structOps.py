@@ -671,7 +671,7 @@ def printSymFns():
     f.close
     return
 
-def computeCrystalParams(coors, buf = 10):
+def computeCellInfo(coors, buf = 10.0):
     '''
     This function computs the a, b, and c lattice vectors for a set
     of coordinates passed to it. It is assumed that the system is in
@@ -688,7 +688,7 @@ def computeCrystalParams(coors, buf = 10):
     cellInfo[5] = 90.0
     return cellInfo
 
-def shiftXyzCenter(coors, buf = 10):
+def shiftXyzCenter(coors, buf = 10.0):
     '''
     This function will linearly transelate all the atom along the
     orthogonal axes, to make sure that the system as a whole is 
