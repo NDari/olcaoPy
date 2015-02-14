@@ -252,6 +252,43 @@ def SklCellType(skl):
     else:
         sys.exit("Uknown cell type: " + skl[-1][0])
 
+### .xyz file functions.
+
+def XyzNumAtoms(xyz):
+    '''
+    This function returns the number of atoms in an xyz file that was read 
+    with the readFile function.
+    '''
+    return int(xyz[0][0])
+
+def XyzComment(xyz):
+    '''
+    This function returns the comment line in an xyz file.
+    '''
+    return " ".join(xyz[1])
+
+def XyzAtomNames(xyz):
+    '''
+    This function returns the atomic names in an xyz file
+    '''
+    numAtoms = XyzNumAtoms(xyz)
+    atomNames = []
+    for i in range(numAtoms):
+        name = xyz[i+2][0] # skip 2 header lines.
+        name = name[0].lower() + name[1:] # olcao convention
+        atomNames.append(name)
+    return atomNames
+
+def XyzCoors(xyz):
+    '''
+    This function returns the atomic coordinates in an xyz file
+    '''
+    numAtoms = XyzNumAtoms(xyz)
+    coors = np.zeros(shape=(numAtoms, 3))
+    for i in range(numAtoms):
+        coors[i][:] = xyz[i+2][1:4]
+    return coors
+
 ### scfV.dat file functions.
 
 # Lets now define some functions to return the various information contained
