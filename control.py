@@ -1,7 +1,6 @@
 import numpy as np
 import constants as co
 import fileOps as fo
-import structOps as so
 import sys
 import os
 import re
@@ -74,8 +73,8 @@ class Structure(object):
                 self.cellType  = fo.SklCellType(skl)
 
                 # calculate the real lattice matrix and its inverse
-                self.rlm = so.makeRealLattice(self.cellInfo)
-                self.mlr = so.makeRealLatticeInv(self.cellInfo)
+                self.rlm = self.makeRealLattice()
+                self.mlr = self.makeRealLatticeInv()
             elif extention == ".xyz":
                 # read the file into a 2D string array.
                 xyz = fo.readFile(fileName)
@@ -88,12 +87,12 @@ class Structure(object):
                 self.atomNames = fo.XyzAtomNames(xyz)
                 self.spaceGrp = "1_a" # no symmetry info in xyz files.
                 self.supercell = np.ones(3) # no super cell.
-                self.CellType = "F" # always "full" type in xyz files.
+                self.cellType = "F" # always "full" type in xyz files.
 
-                self.cellInfo = so.computeCellInfo(self.atomCoors, buf)
-                self.rlm = so.makeRealLattice(self.cellInfo)
-                self.mlr = so.makeRealLatticeInv(self.cellInfo)
-                self.atomCoors = so.shiftXyzCenter(self.atomCoors, buf)
+                self.cellInfo = self.computeCellInfo(buf)
+                self.rlm = self.makeRealLattice()
+                self.mlr = self.makeRealLatticeInv()
+                self.shiftXyzCenter(buf)
             else:
                 sys.exit("Unknown file extention: " + str(extention))
         else:
@@ -108,6 +107,83 @@ class Structure(object):
             self.cellType  = None 
             self.rlm       = None
             self.mlr       = None
+
+    def makeRealLattice(self):
+        """
+        This function creats the real lattice matrix from the magnitudes of the
+        a, b, and c vectors contained in a typical olcao.skl file.
+        """
+        # lets redefine the passed parameters using the physical names. This is
+        # wasteful, but makes the code more readable.
+        a = self.cellInfo[0]
+        b = self.cellInfo[1]
+        c = self.cellInfo[2]
+        # Convert the angles to radians.
+        alpha = math.radians(self.cellInfo[3])
+        beta  = math.radians(self.cellInfo[4])
+        gamma = math.radians(self.cellInfo[5])
+        # Start the construction of the RLM, the real lattice array.
+        rlm = np.zeros(shape=(3,3), dtype=float)
+        # Assume that a and x are coaxial.
+        rlm[0][0] = a
+        rlm[0][1] = 0.0
+        rlm[0][2] = 0.0
+        # b is then in the xy-plane.
+        rlm[1][0] = (b * math.cos(gamma))
+        rlm[1][1] = (b * math.sin(gamma))
+        rlm[1][2] = 0.0
+        # c is a mix of x,y, and z directions.
+        rlm[2][0] = (c * math.cos(beta))
+        rlm[2][1] = (c * (math.cos(alpha) - math.cos(gamma)*math.cos(beta)) / math.sin(gamma))
+        rlm[2][2] = (c * math.sqrt(1.0 - math.cos(beta)**2 - ((rlm[2][1]/c)**2)))
+        # now lets correct for numerical errors.
+        rlm[rlm < 0.000000001] = 0.0
+        return rlm
+
+    def makeRealLatticeInv(self):
+        """
+        This function inverts the real lattice matrix, which is created from the 
+        magnitude of the cell vectors and the angles of a structure.
+        """
+        invRlm = np.linalg.inv(self.rlm)
+        return invRlm
+
+    def computeCellInfo(self, buf = 10.0):
+        '''
+        This function computs the a, b, and c lattice vectors for a set
+        of coordinates passed to it. It is assumed that the system is in
+        a orthorhombic box and therefore alpha, beta, and gamma are set
+        to 90 degrees, and a, b, and c lattice vectors map to x, y, and z
+        axes.
+        '''
+        cellInfo = np.zeros(6)
+        cellInfo[0] = self.atomCoors.max(axis=0)[0] - self.atomCoors.min(axis=0)[0] + buf
+        cellInfo[1] = self.atomCoors.max(axis=0)[1] - self.atomCoors.min(axis=0)[1] + buf
+        cellInfo[2] = self.atomCoors.max(axis=0)[2] - self.atomCoors.min(axis=0)[2] + buf
+        cellInfo[3] = 90.0
+        cellInfo[4] = 90.0
+        cellInfo[5] = 90.0
+        return cellInfo
+
+    def shiftXyzCenter(self, buf = 10.0):
+        '''
+        This function will linearly transelate all the atom along the
+        orthogonal axes, to make sure that the system as a whole is 
+        centered in the simulation box. The atoms in the system will 
+        have a buffer from the edges of the simulation box, and 
+        therefore this is only applicable to molecular systems or
+        clusters. Do not use this subroutine directly unless you know what
+        you are doing.
+        '''
+        shiftedCoors = np.zeros(shape=(self.numAtoms, 3))
+        xmin = self.atomCoors.min(axis=0)[0]
+        ymin = self.atomCoors.min(axis=0)[1]
+        zmin = self.atomCoors.min(axis=0)[2]
+        for i in xrange(len(self.atomCoors)):
+            self.atomCoors[i][0] = self.atomCoors[i][0] - xmin + buf/2.0
+            self.atomCoors[i][1] = self.atomCoors[i][1] - ymin + buf/2.0
+            self.atomCoors[i][2] = self.atomCoors[i][2] - zmin + buf/2.0
+        return self
 
     def clone(self):
         """
@@ -280,15 +356,6 @@ class Structure(object):
         for atom in xrange(self.numAtoms):
             atomZNums.append(co.atomicZ[atomElementNames[atom]])
         return atomZNums
-
-    def covalRadii(self):
-        """
-        This subroutine returns the covalent radii of the atoms in the
-        system. the covalent radii are defined in the constants module.
-        """
-        atomElementNames = self.elementNames()
-        covalRadii = so.getSysCovRads(atomElementNames)
-        return covalRadii
 
     def toFrac(self):
         """
@@ -718,3 +785,15 @@ class Structure(object):
         allSym[:, 78] = self.genSymFn5(5.0, 1.0, 5.0, 0.5, mdm, mdv) 
 
         return allSym
+
+    def covalentRadii(self):
+        '''
+        This function returns a dictionary where the keys are the unique
+        elements in the system and the values are their covalent radii.
+        '''
+        eList = self.elementList()
+        covRads = {}
+        for element in eList:
+            covRads[element] = co.covalRad[element]
+        return covRads
+
