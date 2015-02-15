@@ -545,18 +545,15 @@ def SdatCellVecs(sdat):
 
     from a 2D array which is passed to this function. The passed array is
     constructed from reading the structure.dat file.
-    NOTE: The returned cell vectors are converted to Angstrom from atomic units.
     """
     cellVecs = np.zeros(shape=(3,3))
     cellVecs[0][0:3] = sdat[1][0:3]
     cellVecs[1][0:3] = sdat[2][0:3]
     cellVecs[2][0:3] = sdat[3][0:3]
 
-    # these values are in atomic units. we convert them to ang here.
-    cellVecs *= co.au2Ang
     return cellVecs
 
-def SdatNumAtoms(sdat):
+def SdatNumAtomSites(sdat):
     """
     This function returns the number of atoms contained in a 2D array contructed
     from reading the structure.dat file.
@@ -568,27 +565,24 @@ def SdatAtomTypes(sdat):
     This function returns the types of the atoms contained in a 2D array which
     was contructed from reading the structure.dat file. 
     """
-    numAtoms = SdatNumAtoms(sdat)
+    numAtoms = SdatNumAtomSites(sdat)
     types = np.zeros(shape=(numAtoms), dtype = int)
-    for atom in range(numAtoms):
+    for atom in xrange(numAtoms):
         # the type information starts at the 8th line (line 7).
         types[atom] = sdat[7+atom][1]
     return types
 
-def SdatCoors(sdat):
+def SdatAtomSites(sdat):
     """
     This function returns the atomic coordinates contained in a 2D array which
     was contructed from reading the structure.dat file. Note that the coors in
-    the structure.dat file are in atomic units, and they are automatically
-    converted to Angstroms here.
+    the structure.dat file are in atomic units.
     """
-    numAtoms = SdatNumAtoms(sdat)
+    numAtoms = SdatNumAtomSites(sdat)
     coors = np.zeros(shape=(numAtoms,3))
-    for atom in range(numAtoms):
+    for atom in xrange(numAtoms):
         # the type information starts at the 8th line (line 7).
         coors[atom][0:3] = sdat[7+atom][2:5]
-    # convert to angstroms from atomic units.
-    coors[:,:] = coors[:,:] * co.au2Ang
     return coors
 
 def SdatAtomNames(sdat):
@@ -596,14 +590,60 @@ def SdatAtomNames(sdat):
     This function returns the element names in a structure contained in a 2D
     array contructure from reading the structure.dat file. 
     """
-    numAtoms = SdatNumAtoms(sdat)
+    numAtoms = SdatNumAtomSites(sdat)
     aNames = np.chararray(shape=(numAtoms), itemsize = 2)
-    for atom in range(numAtoms):
+    for atom in xrange(numAtoms):
         # the name information starts at the 8th line (line 7)
-        name         = sdat[7+atom][5]
-        name         = name[0].upper() + name[1:]
-        aNames[atom] = name
+        # check that the list is in the correct order. die if not.
+        if atom+1 != int(sdat[7+atom][0]):
+            sys.exit("Atom site list out of order!")
+        aNames[atom] = sdat[7+atom][5]
     return aNames
+
+def SdatNumPotSites(sdat):
+    '''
+    This function returns the number of potential sites in a structure
+    from the structure.dat file.
+    '''
+    for i in xrange(len(sdat)):
+        if sdat[i][0] == "NUM_POTENTIAL_SITES":
+            numPotSites = int(sdat[i+1][0])
+            break
+    return numPotSites
+
+def SdatPotTypeAssn(sdat):
+    '''
+    This function return the pot type assignment of all the atoms in the
+    system.
+    '''
+    numPotSites = SdatNumPotSites(sdat)
+    potSiteAssn = np.zeros(shape=(numPotSites), dtype = int)
+    if sdat[i][0] == "NUM_POTENTIAL_SITES":
+        line = i + 3
+        for pot in xrange(numPotSites):
+            # the name information starts at the 8th line (line 7)
+            # check that the list is in the correct order. die if not.
+            if pot+1 != int(sdat[line+pot][0]):
+                sys.exit("Potential site list out of order!")
+            potSiteAssn[pot] = sdat[line+pot][1]
+    return potSiteAssn
+
+def SdatPotSites(sdat):
+    '''
+    The function returns the location of the potential sites for
+    a structure, written in the structure.dat file.
+    '''
+    numPotSites = SdatNumPotSites(sdat)
+    potSites = np.zeros(shape=(numPotSites, 3))
+    for i in xrange(len(sdat)):
+        if sdat[i][0] == "NUM_POTENTIAL_SITES":
+            line = i + 3
+            for pot in xrange(numPotSites):
+                # check that the list is in the correct order. die if not.
+                if pot+1 != int(sdat[line+pot][0]):
+                    sys.exit("Potential site list out of order!")
+                potSites[pot][:] = sdat[line+pot][2:5]
+    return potSites
 
 ### bondAnalysis.boo file functions.
 
