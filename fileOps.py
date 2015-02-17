@@ -692,7 +692,7 @@ def BlNumBonds(babl):
     for item in range(len(babl)): # loop over the first index of the array.
         if babl[item][1] == "Num_bonds:": 
             numBonds[atom] = int(babl[item][2])
-        atom += 1
+            atom += 1
     return numBonds
 
 def BlBondingArray(babl):
