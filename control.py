@@ -797,3 +797,38 @@ class Structure(object):
             covRads[element] = co.covalRad[element]
         return covRads
 
+    def bondingList(self, 
+                    mdm = None, 
+                    bf = 1.1, 
+                    covRads = None, 
+                    atomElementList = None):
+        '''
+        This function creates a 2D list of bonds. for every atom x, we get a list of 
+        atoms to which x is bonded.
+        The passed arguments are "covRads", which is a list of the covalent radii for
+        every atom, and "mdm" which is the min. distance between atoms, when
+        PBCs are taken into consideration. the "bf" argument is
+        is the bonding factor. atoms are considered to be bonded if their distance is
+        less or equal to the sum of their covalent radii * bf. The default for bf
+        is 1.1.
+        NOTE: The returned list starts at 0. so atom 102 will be returned
+        as atom 101, etc.
+        '''
+        if mdm == None:
+            mdm = self.minDistMat()
+        if covRads == None:
+            covRads = self.covalentRadii()
+        if atomElementList == None:
+            atomElementList = self.elementNames()
+
+        bondingList = np.zeros(shape=(self.numAtoms), dtype = object)
+        for atom1 in xrange(self.numAtoms):
+            atomBonds = []
+            for atom2 in xrange(self.numAtoms):
+                bondDist = (covRads[atomElementList[atom1]] + 
+                            covRads[atomElementList[atom2]]) * bf
+                if bondDist >= mdm[atom1][atom2]:
+                    atomBonds.append(atom2)
+            bondingList[atom1] = atomBonds
+
+        return bondingList
