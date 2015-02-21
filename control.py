@@ -282,8 +282,9 @@ class Structure(object):
         '''
         mutate moves the atoms in a structure by a given distance, mag, in
         a random direction. the probablity that any given atom will be moves
-        is given by the argument 'prob', where 0.0 means %0 chance that  the atom
-        will not move, and 1.0 means a %100 chance that a given atom will move.
+        is given by the argument 'prob', where 0.0 means %0 chance that  the 
+        atom will not move, and 1.0 means a %100 chance that a given atom will 
+        move.
         '''
         self.toCart()
         for i in xrange(self.numAtoms):
@@ -486,8 +487,8 @@ class Structure(object):
                                                    sum(atom[:]*self.rlm[:][1]),
                                                    sum(atom[:]*self.rlm[:][2]))
                         for b in xrange(a+1, self.numAtoms):
-                            dist = math.sqrt(sum((atom[:]-self.atomCoors[b][:])*
-                                                 (atom[:]-self.atomCoors[b][:])))
+                            dist = math.sqrt(sum((atom-self.atomCoors[b])*
+                                                 (atom-self.atomCoors[b])))
                             if dist < mdm[a][b]:
                                 mdm[a][b] = dist
                                 mdm[b][a] = dist
@@ -677,7 +678,8 @@ class Structure(object):
                     # magnitudes are the distances in the mdm.
                     cosTheta_ijk = np.dot(Rij, Rik) / (mdm[i][j] * mdm[i][k])
                     symFn5[i] += (((1.0+lamb*cosTheta_ijk)**zeta) * 
-                                  (math.exp(-eta*(mdm[i][j]**2 + mdm[i][k]**2)))* 
+                                  (math.exp(-eta*(mdm[i][j]**2 + 
+                                             mdm[i][k]**2)))* 
                                   (FcRij * FcRik))
             
             symFn5[i] *= (2**(1.0 - zeta))
@@ -803,14 +805,14 @@ class Structure(object):
                     covRads = None, 
                     atomElementList = None):
         '''
-        This function creates a 2D list of bonds. for every atom x, we get a list of 
-        atoms to which x is bonded.
-        The passed arguments are "covRads", which is a list of the covalent radii for
-        every atom, and "mdm" which is the min. distance between atoms, when
-        PBCs are taken into consideration. the "bf" argument is
-        is the bonding factor. atoms are considered to be bonded if their distance is
-        less or equal to the sum of their covalent radii * bf. The default for bf
-        is 1.1.
+        This function creates a list of dicts. for every atom x, we get a dict 
+        of atoms to which x is bonded.
+        The optional arguments are "covRads", which is a list of the covalent 
+        radii for every unique element, and "mdm" which is the min. distance 
+        between atoms, when PBCs are taken into consideration, and "bf" that is
+        is the bonding factor. atoms are considered to be bonded if their 
+        distance is less or equal to the sum of their covalent radii * bf. 
+        The default for bf is 1.1.
         NOTE: The returned list starts at 0. so atom 102 will be returned
         as atom 101, etc.
         '''
@@ -821,14 +823,25 @@ class Structure(object):
         if atomElementList == None:
             atomElementList = self.elementNames()
 
-        bondingList = np.zeros(shape=(self.numAtoms), dtype = object)
+        bondingList = np.zeros(shape=(self.numAtoms), dtype = dict)
         for atom1 in xrange(self.numAtoms):
-            atomBonds = []
+            atomBonds = {}
             for atom2 in xrange(self.numAtoms):
-                bondDist = (covRads[atomElementList[atom1]] + 
-                            covRads[atomElementList[atom2]]) * bf
-                if bondDist >= mdm[atom1][atom2]:
-                    atomBonds.append(atom2)
+                if atom1 != atom2:
+                    bondDist = (covRads[atomElementList[atom1]] + 
+                                covRads[atomElementList[atom2]]) * bf
+                    if bondDist >= mdm[atom1][atom2]:
+                        atomBonds[atom2] = bondDist
             bondingList[atom1] = atomBonds
 
         return bondingList
+
+    def coordination(self, bondingList = None, bf = 1.1):
+        '''
+        This function returns the coordination of each atom in the structure.
+        by coordination of an atom x, we mean the number of atoms to which x is
+        bonded.
+        '''
+        if bondingList == None:
+            bondingList = self.bondingList(bf = bf)
+        return [len(a) for a in bondingList]
