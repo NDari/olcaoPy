@@ -7,6 +7,7 @@ import re
 import math
 import copy
 import random
+import collections
 
 class Structure(object):
 
@@ -438,6 +439,7 @@ class Structure(object):
                             if dist < mdm[a][b]:
                                 mdm[a][b] = dist
                                 mdm[b][a] = dist
+
         for i in xrange(self.numAtoms):
             mdm[i][i] = 0.0
 
@@ -823,16 +825,14 @@ class Structure(object):
         if atomElementList == None:
             atomElementList = self.elementNames()
 
-        bondingList = np.zeros(shape=(self.numAtoms), dtype = dict)
-        for atom1 in xrange(self.numAtoms):
-            atomBonds = {}
-            for atom2 in xrange(self.numAtoms):
-                if atom1 != atom2:
-                    bondDist = (covRads[atomElementList[atom1]] + 
-                                covRads[atomElementList[atom2]]) * bf
-                    if bondDist >= mdm[atom1][atom2]:
-                        atomBonds[atom2] = bondDist
-            bondingList[atom1] = atomBonds
+        bondingList = collections.defaultdict(dict)
+        for atom1 in xrange(self.numAtoms-1):
+            for atom2 in xrange(atom1 + 1, self.numAtoms):
+                bondDist = (covRads[atomElementList[atom1]] + 
+                            covRads[atomElementList[atom2]]) * bf
+                if bondDist >= mdm[atom1][atom2]:
+                    bondingList[atom1][atom2] = bondDist
+                    bondingList[atom2][atom1] = bondDist
 
         return bondingList
 
@@ -844,4 +844,4 @@ class Structure(object):
         '''
         if bondingList == None:
             bondingList = self.bondingList(bf = bf)
-        return [len(a) for a in bondingList]
+        return [len(bondingList[i]) for i in xrange(len(bondingList))]
