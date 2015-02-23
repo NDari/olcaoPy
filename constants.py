@@ -1,7 +1,7 @@
 # conversion constants
 
-bohr2Ang     = 0.529177208
-ang2Bohr     = 1.889726134
+AU2SI     = 0.529177208
+SI2AU     = 1.889726134
 ev2Hartree = 0.036749325
 hartree2Ev = 27.21138386
 

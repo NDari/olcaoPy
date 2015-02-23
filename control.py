@@ -94,6 +94,23 @@ class Structure(object):
                 self.rlm = self.makeRealLattice()
                 self.mlr = self.makeRealLatticeInv()
                 self.shiftXyzCenter(buf)
+            elif extention == ".dat":
+                sdat = fo.readFile(fileName)
+                self.title = "Generic structure.dat title"
+                self.coordType = "C"
+                self.numAtoms = fo.SdatNumAtomSites(sdat)
+                self.atomCoors = fo.SdatAtomSites(sdat)
+                self.atomNames = fo.SdatAtomNames(sdat)
+                self.spaceGrp = "1_a" 
+                self.supercell = np.ones(3) 
+                self.cellType = "F"
+                # the next 3 fields get reset when we call the "toSI" method,
+                # but ill take the small performance hit for transparancy's 
+                # sake. 
+                self.rlm = fo.SdatCellVecs(sdat)
+                self.mlr = np.linalg.inv(self.rlm)
+                self.cellInfo = self.getCellInfoFromRlm()
+                self.toSI()
             else:
                 sys.exit("Unknown file extention: " + str(extention))
         else:
@@ -845,3 +862,19 @@ class Structure(object):
         if bondingList == None:
             bondingList = self.bondingList(bf = bf)
         return [len(bondingList[i]) for i in xrange(len(bondingList))]
+
+    def toAU(self):
+        pass
+
+    def toSI(self):
+        '''
+        This function takes a structure object and converts it to SI units.
+        '''
+        self.rlm *= co.AU2SI
+        self.cellInfo = self.getCellInfoFromRlm()
+        self.mlr = np.linalg.inv(self.rlm)
+        self.atomCoors *= co.AU2SI
+        return self
+
+    def getCellInfoFromRlm(self):
+        pass
