@@ -877,4 +877,29 @@ class Structure(object):
         return self
 
     def getCellInfoFromRlm(self):
-        pass
+        '''
+        This function computes the magnitudes of the a, b, and c cell
+        vectors as well as the alpha, beta, gamma angles. together, these
+        six parameters are the cell information.
+        '''
+        cellInfo = np.zeros(6)
+        for i in xrange(3):
+            cellInfo[i] = math.sqrt(self.rlm[i][0]*self.rlm[i][0] +
+                                    self.rlm[i][1]*self.rlm[i][1] +
+                                    self.rlm[i][2]*self.rlm[i][2])
+
+        # alpha is angle between b and c
+        cellInfo[3] = math.acos(np.dot(self.rlm[1], self.rlm[2])/
+            (np.linalg.norm(self.rlm[1]) * np.linalg.norm(self.rlm[2]))) 
+        cellInfo[3] = math.degrees(cellInfo[3])
+
+        # beta is between a and c
+        cellInfo[4] = math.acos(np.dot(self.rlm[0], self.rlm[2])/
+            (np.linalg.norm(self.rlm[0]) * np.linalg.norm(self.rlm[2]))) 
+        cellInfo[4] = math.degrees(cellInfo[4])
+
+        # gamma is between a and b
+        cellInfo[5] = math.acos(np.dot(self.rlm[0], self.rlm[1])/
+            (np.linalg.norm(self.rlm[0]) * np.linalg.norm(self.rlm[1])))
+        cellInfo[5] = math.degrees(cellInfo[5])
+        return cellInfo
