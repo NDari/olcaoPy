@@ -1,0 +1,8 @@
+#!/usr/bin/env python
+
+import olcaoPy.fileOps as fo
+import olcaoPy.control as ctrl
+
+s = ctrl.Structure("olcao.skl")
+r = s.getSymFns()
+fo.writeFloats("symmetryFns.out", r)

@@ -1,0 +1,78 @@
+#!/usr/bin/env python
+
+import numpy as np
+import olcaoPy.fileOps as fo
+
+summary = fo.readFile("summary")
+
+valeDim = int(summary[5][4])
+potDim = int(summary[7][3])
+numAtoms = int(summary[8][4])
+
+potPerAtom = potDim / numAtoms
+valePerAtom = valeDim / numAtoms
+
+exchCorr = np.zeros(potDim)
+elecStat = np.zeros(potDim)
+kineEner = np.zeros((valeDim*(valeDim+1))/2)
+nucPot = np.zeros((valeDim*(valeDim+1))/2)
+
+XC = np.zeros(numAtoms)
+ES = np.zeros(numAtoms)
+KE = np.zeros(numAtoms)
+NP = np.zeros(numAtoms)
+TE = np.zeros(numAtoms)
+
+M1 = np.zeros(shape=(valeDim, valeDim))
+M2 = np.zeros(shape=(valeDim, valeDim))
+
+infile = fo.readFile("intermediate/XC.out")
+for i in range(potDim):
+    exchCorr[i] = float(infile[i][0])
+infile = fo.readFile("intermediate/ES.out")
+for i in range(potDim):
+    elecStat[i] = float(infile[i][0])
+infile = fo.readFile("intermediate/KE.out")
+for i in range(len(kineEner)):
+    kineEner[i] = float(infile[i][0])
+infile = fo.readFile("intermediate/nucPot.out")
+for i in range(len(nucPot)):
+    nucPot[i] = float(infile[i][0])
+
+item = 0
+for i in range(valeDim):
+    for j in range(valeDim):
+        M1[i][j] = kineEner[item]
+        M2[i][j] = nucPot[item]
+        M1[j][i] = M1[i][j]
+        M2[j][i] = M2[i][j]
+        item += 1
+        if i == j:
+            break
+
+for i in range(numAtoms):
+    for j in range(potPerAtom):
+        XC[i] += exchCorr[i*potPerAtom+j]
+        ES[i] += elecStat[i*potPerAtom+j]
+
+for i in range(numAtoms):
+    for j in range(valePerAtom):
+        for k in range(valeDim):
+            KE[i] += M1[i*valePerAtom+j][k]
+            NP[i] += M2[i*valePerAtom+j][k]
+
+string = ""
+for i in range(numAtoms):
+    ES[i] += NP[i]
+    TE[i] = KE[i] + ES[i] + XC[i]
+    string += str(TE[i])
+    string += "\n"
+
+f = open("siteEnergies.out", 'w')
+f.write(string)
+f.close()
+
+print "Kinetic Energy:              " + str(sum(KE))
+print "ElectroStatic Energy:        " + str(sum(ES))
+print "Exchange-Correlation Energy: " + str(sum(XC))
+print "Total Energy:                " + str(sum(TE))
