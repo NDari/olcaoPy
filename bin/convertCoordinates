@@ -1,0 +1,14 @@
+#!/usr/bin/env python
+
+import olcaoPy.control as ctrl
+
+s = ctrl.Structure("olcao.skl")
+
+if s.coordType == "F":
+    s.toCart()
+elif s.coordType == "C":
+    s.toFrac()
+else:
+    sys.exit("unknow coordinate type: " + s.coordType)
+
+s.writeSkl("converted.olcao.skl")
