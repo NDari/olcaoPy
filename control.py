@@ -848,8 +848,8 @@ class Structure(object):
                 bondDist = (covRads[atomElementList[atom1]] + 
                             covRads[atomElementList[atom2]]) * bf
                 if bondDist >= mdm[atom1][atom2]:
-                    bondingList[atom1][atom2] = bondDist
-                    bondingList[atom2][atom1] = bondDist
+                    bondingList[atom1][atom2] = mdm[atom1][atom2]
+                    bondingList[atom2][atom1] = mdm[atom2][atom1]
 
         return bondingList
 
