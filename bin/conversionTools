@@ -1,0 +1,48 @@
+#!/usr/bin/env python
+
+import olcaoPy.control as ctrl
+import optparse
+import sys
+import os
+
+# create a parser for the argv[]
+parser = optparse.OptionParser()
+
+parser.add_option('-i', action='store', dest='iFile', default='olcao.skl',
+        help='The input file. Default is "olcao.skl".')
+parser.add_option('-o', action='store', dest='oFile', default='new.olcao.skl',
+        help='The output file. Default is "new.olcao.skl".')
+parser.add_option('-c', action='store_true', dest='convCoors', default=False,
+        help='Convert coordinates from cart to frac and vice versa. ' +
+             'The default is to not do any conversion.')
+parser.add_option('-b', action='store', dest='buf', default=0.0, type='float',
+        help='The buffer that is needed when reading or writing *.xyz files. ' +
+             'This buffer will pad the structure on all sides, and is needed ' +
+             'for molecular systems. Default is 0.0 (no padding).')
+
+# parse the arguments
+options, args = parser.parse_args()
+
+out_extension = os.path.splitext(options.oFile)[1]
+if out_extension != ".skl" and out_extension != ".xyz":
+    sys.exit("Sorry, Can only write to *.skl or *.xyz files currently.")
+
+in_extension = os.path.splitext(options.iFile)[1]
+if in_extension == ".xyz":
+    s = ctrl.Structure(options.iFile, buf=options.buf)
+else:
+    s = ctrl.Structure(options.iFile)
+
+# convert
+if options.convCoors:
+    if s.coordType == "F":
+        s.toCart()
+    elif s.coordType == "C":
+        s.toFrac()
+    else:
+        sys.exit("unknow coordinate type: " + s.coordType)
+
+if out_extension == ".skl":
+    s.writeSkl(fileName = options.oFile)
+else:
+    s.writeXyz(fileName = options.oFile)
