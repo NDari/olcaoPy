@@ -1,0 +1,48 @@
+#!/usr/bin/env python
+
+import olcaoPy.control as ctrl
+import optparse
+
+# create a parser for the argv[]
+parser = optparse.OptionParser()
+
+parser.add_option('-l', action='store_true', dest='bl', default=False,
+        help='The option to print the bonds and their lengths of all ' +
+             'the atoms in the system in "analysis.bl". Default ' +
+             'is not to print this file.')
+parser.add_option('-i', action='store', dest='iFile', default="olcao.skl",
+        help='The input file. Default is "olcao.skl".')
+parser.add_option('-f', action='store', dest='bf', default='1.1', type='float',
+        help='The bonding factor. Two atoms are considered bonded if the sum ' +
+             'of their covalent radii times the bonding factor is bigger or ' +
+             'equal to their distance from one another. Default is 1.1.')
+
+
+# parse the arguments
+options, args = parser.parse_args()
+
+# read the input file
+s = ctrl.Structure(options.iFile)
+
+# carry out the requested action(s)
+if options.bl:
+    r = s.bondingList(bf = options.bf)
+    print len(r)
+    string = ""
+    for i in range(len(r)):
+        string += str(i+1)
+        string += "\n"
+        keys = sorted(r[i].keys())
+        vals = sorted(r[i].values())
+        for j in range(len(keys)):
+            string += str(keys[j]+1)
+            string += " "
+            string += str(vals[j])
+            string += " "
+        string += "\n"
+    f = open('analysis.bl', 'w')
+    f.write(string)
+    f.close()
+
+
+
