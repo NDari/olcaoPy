@@ -8,17 +8,34 @@ import os
 # create a parser for the argv[]
 parser = optparse.OptionParser()
 
-parser.add_option('-i', action='store', dest='iFile', default='olcao.skl',
-        help='The input file. Default is "olcao.skl".')
-parser.add_option('-o', action='store', dest='oFile', default='new.olcao.skl',
-        help='The output file. Default is "new.olcao.skl".')
-parser.add_option('-c', action='store_true', dest='convCoors', default=False,
-        help='Convert coordinates from cart to frac and vice versa. ' +
-             'The default is to not do any conversion.')
-parser.add_option('-b', action='store', dest='buf', default=0.0, type='float',
-        help='The buffer that is needed when reading or writing *.xyz files. ' +
-             'This buffer will pad the structure on all sides, and is needed ' +
-             'for molecular systems. Default is 0.0 (no padding).')
+parser.add_option('-i', '--input', 
+                  action='store', 
+                  dest='iFile', 
+                  default='olcao.skl',
+                  help='The input file. Default is "olcao.skl".')
+
+parser.add_option('-o', '--output', 
+                  action='store', 
+                  dest='oFile', 
+                  default='new.olcao.skl',
+                  help='The output file. Default is "new.olcao.skl".')
+
+parser.add_option('-c', '--convert', 
+                  action='store_true', 
+                  dest='convCoors', 
+                  default=False,
+                  help='Convert coordinates from cart to frac and vice ' + 
+                       'versa. The default is to not do any conversion.')
+
+parser.add_option('-b', '--buffer', 
+                  action='store', 
+                  dest='buf', 
+                  default=0.0, 
+                  type='float',
+                  help='The buffer that is needed when reading or writing ' + 
+                       '*.xyz files. This buffer will pad the structure on ' + 
+                       'all sides, and is needed for molecular systems. ' + 
+                       'Default is 0.0 (no padding).')
 
 # parse the arguments
 options, args = parser.parse_args()
