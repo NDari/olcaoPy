@@ -413,6 +413,23 @@ class Structure(object):
         self.coordType = 'C'
         return self
 
+
+    def toCart2(self):
+        """
+        Modifies the structure, by converting its atomic coordinates to
+        cartesian. If the coordinates are already cartesian, nothing
+        is done.
+        """
+        if self.coordType == 'C':
+            return
+        for i in self.numAtoms:
+            (i[0], i[1], i[2])=(sum(i[:] * self.rlm[:][0]),
+                                sum(i[:] * self.rlm[:][1]),
+                                sum(i[:] * self.rlm[:][2]))
+
+        self.coordType = 'C'
+        return self
+
     def minDistMat(self):
         """
         This function creates the min. distance matrix between all the points
