@@ -177,12 +177,12 @@ class Structure(object):
         axes.
         '''
         cellInfo = np.zeros(6)
-        cellInfo[0] = (self.atomCoors.max(axis=0)[0] -
-                self.atomCoors.min(axis=0)[0] + buf)
-        cellInfo[1] = (self.atomCoors.max(axis=0)[1] -
-                self.atomCoors.min(axis=0)[1] + buf)
-        cellInfo[2] = (self.atomCoors.max(axis=0)[2] -
-                self.atomCoors.min(axis=0)[2] + buf)
+        cellInfo[0] = self.atomCoors.max(axis=0)[0] -
+                self.atomCoors.min(axis=0)[0] + buf
+        cellInfo[1] = self.atomCoors.max(axis=0)[1] -
+                self.atomCoors.min(axis=0)[1] + buf
+        cellInfo[2] = self.atomCoors.max(axis=0)[2] -
+                self.atomCoors.min(axis=0)[2] + buf
         cellInfo[3] = 90.0
         cellInfo[4] = 90.0
         cellInfo[5] = 90.0
