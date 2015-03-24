@@ -198,14 +198,10 @@ class Structure(object):
         clusters. Do not use this subroutine directly unless you know what
         you are doing.
         '''
-        shiftedCoors = np.zeros(shape=(self.numAtoms, 3))
-        xmin = self.atomCoors.min(axis=0)[0]
-        ymin = self.atomCoors.min(axis=0)[1]
-        zmin = self.atomCoors.min(axis=0)[2]
-        for i in xrange(len(self.atomCoors)):
-            self.atomCoors[i][0] = self.atomCoors[i][0] - xmin + buf/2.0
-            self.atomCoors[i][1] = self.atomCoors[i][1] - ymin + buf/2.0
-            self.atomCoors[i][2] = self.atomCoors[i][2] - zmin + buf/2.0
+        if self.coordType == "F": # this should never happen... but just in case
+            self.toCart()
+        for i in self.atomCoors:
+            i[:] += (buf/2.0)
         return self
 
     def clone(self):
