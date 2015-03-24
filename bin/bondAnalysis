@@ -7,30 +7,30 @@ import optparse
 parser = optparse.OptionParser()
 
 parser.add_option('-l',
-                  '--bondlengths', 
-                  action='store_true', 
-                  dest='bl', 
+                  '--bondlengths',
+                  action='store_true',
+                  dest='bl',
                   default=False,
-                  help='The option to print the bonds and their lengths of all ' +
-                       'the atoms in the system in "analysis.bl". Default ' +
-                       'is not to print this file.')
+                  help='The option to print the bonds and their lengths of ' +
+                        'all the atoms in the system in "analysis.bl". ' +
+                        'Default is not to print this file.')
 
-parser.add_option('-i', 
-                  '--input', 
-                  action='store', 
-                  dest='iFile', 
+parser.add_option('-i',
+                  '--input',
+                  action='store',
+                  dest='iFile',
                   default="olcao.skl",
                   help='The input file. Default is "olcao.skl".')
 
-parser.add_option('-f', 
+parser.add_option('-f',
                   '--bondingfactor',
-                  action='store', 
-                  dest='bf', 
-                  default='1.1', 
+                  action='store',
+                  dest='bf',
+                  default='1.1',
                   type='float',
-                  help='The bonding factor. Two atoms are considered ' + 
-                       'bonded if the sum of their covalent radii times ' + 
-                       'the bonding factor is bigger or equal to their ' + 
+                  help='The bonding factor. Two atoms are considered ' +
+                       'bonded if the sum of their covalent radii times ' +
+                       'the bonding factor is bigger or equal to their ' +
                        'distance from one another. Default is 1.1.')
 
 
@@ -59,6 +59,3 @@ if options.bl:
     f = open('analysis.bl', 'w')
     f.write(string)
     f.close()
-
-
-
