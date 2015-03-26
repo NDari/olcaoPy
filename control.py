@@ -245,7 +245,7 @@ class Structure(object):
         elif self.coordType == "C":
             string += "cart "
         else:
-            sys.exit("Unknow coordinate type " + self.coordType)
+            sys.exit("Unknown coordinate type " + self.coordType)
         string = string + str(self.numAtoms) + "\n"
         for i in xrange(self.numAtoms):
             string += str(self.atomNames[i])
