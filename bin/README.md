@@ -30,6 +30,14 @@ for a complete discussion of symmetry functions, see:
 "Atom Centered Symmetry Fucntions for Contructing High-Dimentional Neural Network 
 Potentials", by Jorg Behler, J. Chem. Phys. 134, 074106 (2011)
 
+# bondAnalysis
+
+This scripts is used to:
+
+* Print the coordination of each atom in the system
+* Print the bond lengths of all the bonds in the system
+* print the bond angles for all bonded triplets of atoms
+
 
 This software is Free. Do with it what you like. I am not responsible for any bugs!
 
