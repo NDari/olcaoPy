@@ -12,33 +12,34 @@ parser.add_option('-l', '--bondlengths',
                   action='store_true',
                   dest='bl',
                   default=False,
-                  help='The option to print the bonds and their lengths of ' +
-                        'all the atoms in the system in "analysis.bl". ' +
-                        'Default is not to print this file.')
+                  help='''
+The option to print the bonds and their lengths of all the atoms in the system 
+in "analysis.bl". Default is not to print this file.''')
 
 parser.add_option('-i', '--input',
                   action='store',
                   dest='iFile',
                   default="olcao.skl",
-                  help='The input file. Default is "olcao.skl".')
+                  help='''
+The input file. Default is "olcao.skl".''')
 
 parser.add_option('-f', '--bondingfactor',
                   action='store',
                   dest='bf',
                   default='1.1',
                   type='float',
-                  help='The bonding factor. Two atoms are considered ' +
-                       'bonded if the sum of their covalent radii times ' +
-                       'the bonding factor is bigger or equal to their ' +
-                       'distance from one another. Default is 1.1.')
+                  help='''
+The bonding factor. Two atoms are considered bonded if the sum of their 
+covalent radii times the bonding factor is bigger or equal to their 
+distance from one another. Default is 1.1.''')
 
 parser.add_option('-c', '--coordination',
                   action='store_true',
                   dest='coord',
                   default=False,
-                  help='The option to print the coordination of atoms to ' +
-                       'the "analysis.co" file. ' +
-                       'The default is to not print this file.')
+                  help='''
+The option to print the coordination of atoms to the "analysis.co" file. 
+The default is to not print this file.''')
 
 # parse the arguments
 options, args = parser.parse_args()
