@@ -225,9 +225,11 @@ def SklSupercell(skl):
     This function returns an array corresponding to the supercell contained in
     an array created from reading the olcao.skl file. 
     """
-    supercell = np.zeros(shape=(3), dtype = int)
+    supercell = []
     # supercell info is 2nd from bottom.
-    supercell[0:3] = skl[-2][1:4] 
+    supercell.append(int(skl[-2][1] ))
+    supercell.append(int(skl[-2][2] ))
+    supercell.append(int(skl[-2][3] ))
     return supercell
 
 def SklSupercellMirror(skl):
@@ -235,12 +237,19 @@ def SklSupercellMirror(skl):
     This function returns an array corresponding to the supercell mirror
     contained in an array created from reading the olcao.skl file. 
     """
-    supercellMirror = np.zeros(shape=(3), dtype = int)
+    supercellMirror = []
     # supercell info is 2nd from bottom. note that this information is
     # optional, so it may not be present. if not, we simply return the
     # mirror array as defined ([0, 0, 0]).
     if len(skl[-2]) > 4:
-        supercellMirror[0:3] = skl[-2][4:7] 
+        supercellMirror.append(int(skl[-2][4]))
+        supercellMirror.append(int(skl[-2][5]))
+        supercellMirror.append(int(skl[-2][6]))
+    else:
+        supercellMirror.append(int(0))
+        supercellMirror.append(int(0))
+        supercellMirror.append(int(0))
+
     return supercellMirror
 
 def SklCellType(skl):
@@ -326,7 +335,7 @@ def ScfvNumTermsPerType(scfv):
     # Next line contains the number of terms per type 1 which we want to
     # store, say x. then we will have x number of lines containing the actual
     # terms, then the number of terms for type 2 is printed... so we skip 2 line
-    # at the top, starting at the third line (line 2).
+    # at the top, starting at the third line.
     line = 2
     for j in range(nTypes):
         termsPerType.append(int(scfv[line][0]))
@@ -351,23 +360,19 @@ def ScfvPotCoeffs_up(scfv):
     """
     # get the number of unique types.
     nTypes =  int(scfv[0][1])
-    # get num terms per each type.
-    termsPerType = ScfvNumTermsPerType(scfv) 
-    # coefficients start at 4th line (line 3)
-    i = 3
-    # create a numpy array of objects, where each object is a array of
-    # coefficients. thus creating the desired 2D matrix as noted above.
-    coeffs = np.zeros(shape=(nTypes), dtype = object)
+    # number of coefficients start at 3rd line
+    i = 2
+    coeffs = []
     for j in range(nTypes):
-        currCoeffs = np.zeros(shape=(termsPerType[j]))
-        for k in range(len(currCoeffs)):
+        nTerms = int(scfv[i][0])
+        currCoeffs = []
+        i += 1
+        for k in range(nTerms):
             # the coefficients are the 1st entry in these lines.
-            currCoeffs[k] = scfv[i][0]
+            currCoeffs.append(float(scfv[i][0]))
             # skip a line for the next coefficient
             i += 1
-        coeffs[j] = currCoeffs
-        # skip a line for the header containing num terms per type.
-        i += 1
+        coeffs.append(currCoeffs)
     return coeffs
 
 def ScfvPotCoeffs_dn(scfv):
@@ -385,28 +390,24 @@ def ScfvPotCoeffs_dn(scfv):
     with exchange-correlation functionals that include spin.
     """
     # get the number of unique types.
-    nTypes = ScfvNumTypes(scfv)  
-    # get num terms per each type.
-    termsPerType = ScfvNumTermsPerType(scfv) 
+    nTypes =  int(scfv[0][1])
     # first find the line in which the spin down coefficints are
     # listed
     for j in range(len(scfv)):
         if scfv[j][0] == "SPIN_DN":
-            i = j+1
+            i = j
             break
-    # create a numpy array of objects, where each object is a array of
-    # coefficients. thus creating the desired 2D matrix as noted above.
-    coeffs = np.zeros(shape=(nTypes), dtype = object)
+    coeffs = []
     for j in range(nTypes):
-        currCoeffs = np.zeros(shape=(termsPerType[j]))
-        for k in range(len(currCoeffs)):
+        nTerms = int(scfv[i][0])
+        currCoeffs = []
+        i += 1
+        for k in range(nTerms):
             # the coefficients are the 1st entry in these lines.
-            currCoeffs[k] = scfv[i][0]
+            currCoeffs.append(float(scfv[i][0]))
             # skip a line for the next coefficient
             i += 1
-        coeffs[j] = currCoeffs
-        # skip a line for the header containing num terms per type.
-        i += 1
+        coeffs.append(currCoeffs)
     return coeffs
 
 def ScfvPotCoeffs(scfv):
@@ -423,10 +424,8 @@ def ScfvPotCoeffs(scfv):
     
     """
     # get the number of unique types.
-    nTypes = ScfvNumTypes(scfv)  
-    # create a numpy array of objects, where each object is a array of
-    # coefficients. thus creating the desired 2D matrix as noted above.
-    coeffs = np.zeros(shape=(nTypes), dtype = object)
+    nTypes =  int(scfv[0][1])
+    coeffs = []
     # get the spin up items coefficients, and the spin down coefficients.
     spinUp = ScfvPotCoeffs_up(scfv)
     spinDn = ScfvPotCoeffs_dn(scfv)
@@ -434,7 +433,7 @@ def ScfvPotCoeffs(scfv):
         totalSpin = []
         totalSpin.append(spinUp[i])
         totalSpin.append(spinDn[i])
-        coeffs[i] = totalSpin
+        coeffs.append(totalSpin
 
     return coeffs
 
@@ -450,24 +449,20 @@ def ScfvPotAlphas(scfv):
     contrusted from reading the scfV.dat file. 
     """
     # get the number of unique types.
-    nTypes = ScfvNumTypes(scfv)  
-    # get num terms per each type.
-    termsPerType = ScfvNumTermsPerType(scfv) 
-    # alphas start at 4th line (line 3)
-    i = 3
-    # create a numpy array of objects, where each object is a array of
-    # alphas. thus creating the desired 2D matrix as noted above.
-    alphas = np.zeros(shape=(nTypes), dtype = object)
+    nTypes =  int(scfv[0][1])
+    # number of alphas start at 3rd line
+    i = 2
+    alphas = []
     for j in range(nTypes):
-        currAlphas = np.zeros(shape=(termsPerType[j]))
-        for k in range(len(currAlphas)):
-            # the alphas are the 2nd entry in these lines.
-            currAlphas[k] = scfv[i][1]
-            # skip a line for the next alpha
-            i += 1
-        alphas[j] = currAlphas
-        # skip a line for the header containing num terms per type.
+        nTerms = int(scfv[i][0])
+        currAlphas = []
         i += 1
+        for k in range(nTerms):
+            # the alphas are the 1st entry in these lines.
+            currAlphas.append(float(scfv[i][1]))
+            # skip a line for the next coefficient
+            i += 1
+        alphas.append(currAlphas)
     return alphas
 
 def ScfvFullRhos(scfv):
@@ -482,25 +477,21 @@ def ScfvFullRhos(scfv):
     contrusted from reading the scfV.dat file. 
     """
     # get the number of unique types.
-    nTypes = ScfvNumTypes(scfv)  
-    # get num terms per each type.
-    termsPerType = ScfvNumTermsPerType(scfv) 
-    # full rhos start at 4th line (line 3)
-    i = 3
-    # create a numpy array of objects, where each object is a array of
-    # full rhos. thus creating the desired 2D matrix as noted above.
-    fullRhos = np.zeros(shape=(nTypes), dtype = object)
+    nTypes =  int(scfv[0][1])
+    # number of alphas start at 3rd line
+    i = 2
+    fRhos = []
     for j in range(nTypes):
-        currRhos = np.zeros(shape=(termsPerType[j]))
-        for k in range(len(currRhos)):
-            # the full rhos are the 3rd entry in these lines.
-            currRhos[k] = scfv[i][2]
-            # skip a line for the next full rho
-            i += 1
-        fullRhos[j] = currRhos
-        # skip a line for the header containing num terms per type.
+        nTerms = int(scfv[i][0])
+        currRhos = []
         i += 1
-    return fullRhos
+        for k in range(nTerms):
+            # the alphas are the 1st entry in these lines.
+            currRhos.append(float(scfv[i][2]))
+            # skip a line for the next coefficient
+            i += 1
+        fRhos.append(currRhos)
+    return alphas
 
 def ScfvPartRhos(scfv):
     """
