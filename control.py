@@ -198,8 +198,7 @@ class Structure(object):
         clusters. Do not use this subroutine directly unless you know what
         you are doing.
         '''
-        if self.coordType == "F": # this should never happen... but just in case
-            self.toCart()
+        self.toCart()
         for i in self.atomCoors:
             i[:] += (buf/2.0)
         return self
