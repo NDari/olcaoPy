@@ -1,6 +1,6 @@
 import numpy as np
-import constants as co
-import fileOps as fo
+import olcaoPy.constants as co
+import olcaoPy.fileOps as fo
 import sys
 import os
 import re
