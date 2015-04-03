@@ -923,6 +923,10 @@ class Structure(object):
 
     def writeLAMMPS(self, fileName = "data.lmp"):
         '''
+        This function prints a file, "data.lmp" by default, that can
+        be used as input to LAMMPS. this input is used by lammps to
+        determine the location and the types of the atoms in the 
+        system.
         '''
         # convert to cartesian
         self.toCart()
