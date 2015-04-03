@@ -208,7 +208,7 @@ def SklAtomNames(skl):
         # the convension used throughout olcao.
         name      = name[0].lower() + name[1:]
         aNames[i] = name
-return aNames
+    return aNames
 
 def SklSpaceGrp(skl):
     """
