@@ -921,7 +921,7 @@ class Structure(object):
         cellInfo[5] = math.degrees(cellInfo[5])
         return cellInfo
 
-    def printLAMMPS(self):
+    def writeLAMMPS(self, fileName = "data.lmp"):
         '''
         '''
         # convert to cartesian
@@ -964,7 +964,7 @@ class Structure(object):
             string += str(self.atomCoors[i][2])
             string += "\n"
         
-        f = open("data.lmp", 'w')
+        f = open(fileName, 'w')
         f.write(string)
         f.close()
 

@@ -44,8 +44,8 @@ pad the structure on all sides, and is needed for molecular systems. Default is
 options, args = parser.parse_args()
 
 out_extension = os.path.splitext(options.oFile)[1]
-if out_extension != ".skl" and out_extension != ".xyz":
-    sys.exit("Sorry, Can only write to *.skl or *.xyz files currently.")
+if out_extension != ".skl" and out_extension != ".xyz" and out_extension != ".lmp":
+    sys.exit("Sorry, Can only write to *.skl or *.xyz or *.lmp files currently.")
 
 in_extension = os.path.splitext(options.iFile)[1]
 if in_extension == ".xyz":
@@ -64,5 +64,9 @@ if options.convCoors:
 
 if out_extension == ".skl":
     s.writeSkl(fileName = options.oFile)
-else:
+elif out_extension == ".xyz":
     s.writeXyz(fileName = options.oFile)
+elif out_extension == ".lmp":
+    s.writeLAMMPS(fileName = options.oFile)
+else:
+    print "Dont know how to print this output file" + options.oFile
