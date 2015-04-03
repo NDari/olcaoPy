@@ -920,3 +920,52 @@ class Structure(object):
             (np.linalg.norm(self.rlm[0]) * np.linalg.norm(self.rlm[1])))
         cellInfo[5] = math.degrees(cellInfo[5])
         return cellInfo
+
+    def printLAMMPS(self):
+        '''
+        '''
+        # convert to cartesian
+        self.toCart()
+
+        string = ''
+        string += self.title
+        string += "\n"
+        string += str(self.numAtoms)
+        string += " atoms\n"
+        numTypes = self.elementList()
+        string += str(len(numTypes))
+        string += " atom types\n"
+        string += "0.0 "
+        string += str(self.cellInfo[0])
+        string += " xlo xhi\n"
+        string += "0.0 "
+        string += str(self.cellInfo[1])
+        string += " ylo yhi\n"
+        string += "0.0 "
+        string += str(self.cellInfo[2])
+        string += " zlo zhi\n"
+        string += "\nAtoms\n\n"
+        counter = 1
+        nameDict = {}
+        for i in range(len(numTypes)):
+            nameDict[numTypes[i]] = counter
+            counter += 1
+
+        counter = 1
+        for i in range(self.numAtoms):
+            string += str(i+1)
+            string += " "
+            string += str(nameDict[self.atomNames[i]])
+            string += " "
+            string += str(self.atomCoors[i][0])
+            string += " "
+            string += str(self.atomCoors[i][1])
+            string += " "
+            string += str(self.atomCoors[i][2])
+            string += "\n"
+        
+        f = open("data.lmp", 'w')
+        f.write(string)
+        f.close()
+
+
