@@ -391,12 +391,10 @@ class Structure(object):
         """
         if self.coordType == 'F':
             return
-        for i in xrange(self.numAtoms):
-            (self.atomCoors[i][0],
-             self.atomCoors[i][1],
-             self.atomCoors[i][2])=(sum(self.atomCoors[i][:] * self.mlr[:][0]),
-                                    sum(self.atomCoors[i][:] * self.mlr[:][1]),
-                                    sum(self.atomCoors[i][:] * self.mlr[:][2]))
+        for i in self.atomCoors:
+            (i[0], i[1], i[2])=(sum(i[:] * self.mlr[:][0]),
+                                sum(i[:] * self.mlr[:][1]),
+                                sum(i[:] * self.mlr[:][2]))
 
         self.coordType = 'F'
         return self
@@ -409,26 +407,7 @@ class Structure(object):
         """
         if self.coordType == 'C':
             return
-        for i in xrange(self.numAtoms):
-            (self.atomCoors[i][0],
-             self.atomCoors[i][1],
-             self.atomCoors[i][2])=(sum(self.atomCoors[i][:] * self.rlm[:][0]),
-                                    sum(self.atomCoors[i][:] * self.rlm[:][1]),
-                                    sum(self.atomCoors[i][:] * self.rlm[:][2]))
-
-        self.coordType = 'C'
-        return self
-
-
-    def toCart2(self):
-        """
-        Modifies the structure, by converting its atomic coordinates to
-        cartesian. If the coordinates are already cartesian, nothing
-        is done.
-        """
-        if self.coordType == 'C':
-            return
-        for i in self.numAtoms:
+        for i in self.atomCoors:
             (i[0], i[1], i[2])=(sum(i[:] * self.rlm[:][0]),
                                 sum(i[:] * self.rlm[:][1]),
                                 sum(i[:] * self.rlm[:][2]))
@@ -982,11 +961,7 @@ class Structure(object):
             string += " "
             string += str(nameDict[self.atomNames[i]])
             string += " "
-            string += str(self.atomCoors[i][0])
-            string += " "
-            string += str(self.atomCoors[i][1])
-            string += " "
-            string += str(self.atomCoors[i][2])
+            string += (" ".join(str(x) for x in self.atomCoors[i]))
             string += "\n"
 
         with open(fileName, 'w') as f: 
