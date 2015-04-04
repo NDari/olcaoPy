@@ -8,6 +8,7 @@ import math
 import copy
 import random
 import collections
+import json
 
 class Structure(object):
 
@@ -263,9 +264,10 @@ class Structure(object):
             string += "prim"
         else:
             sys.exit("Unknow cell type: " + str(self.cellType))
-        f = open(fileName, "w")
-        f.write(string)
-        f.close()
+
+        with open(fileName, "w") as f:
+            f.write(string)
+        
         return self
 
     def writeXyz(self, comment = None, fileName = "out.xyz" ):
@@ -278,6 +280,10 @@ class Structure(object):
         this function has to optional parameters, the comment (without
         the new line), and the file name to which we write.
         """
+        # make sure we are not overwriting a file that already exists.
+        if os.path.isfile(fileName):
+            sys.exit("File " + fileName + " already exists!")
+
         if comment == None:
             comment = "Auto-generated comment"
         self.toCart()
@@ -291,9 +297,10 @@ class Structure(object):
             string += (elementalNames[i][:1].upper() + elementalNames[i][1:])
             string += " "
             string += (" ".join(str(x) for x in self.atomCoors[i]))
-        f = open(fileName, 'w')
-        f.write(string)
-        f.close()
+   
+        with open(fileName, 'w') as f:
+            f.write(string)
+        
         return self
 
     def mutate(self, mag, prob):
@@ -928,7 +935,11 @@ class Structure(object):
         determine the location and the types of the atoms in the 
         system.
         '''
-        # convert to cartesian
+        # make sure we are not overwriting a file already made.
+        if os.path.isfile(fileName):
+            sys.exit("File " + fileName + " already exists!")
+
+        # convert to cartesian. lammps input must be in cartesian.
         self.toCart()
 
         string = ''
@@ -948,12 +959,23 @@ class Structure(object):
         string += str(self.cellInfo[2])
         string += " zlo zhi\n"
         string += "\nAtoms\n\n"
+
+        # instead of element names, such as 'si' or 'ca', lammps uses
+        # type IDs which are integers starting from 1 up to the total
+        # number of types in the system. so we need to make a dictionary
+        # to map element names to types.
+        # note that the notion of 'type' in lammps is distinct from the
+        # one used in olcao. there is no direct correlation.
         counter = 1
         nameDict = {}
         for i in range(len(numTypes)):
             nameDict[numTypes[i]] = counter
             counter += 1
+        # print the mapping between element names and type IDs
+        with open('skl_lmp.map', 'w') as f:
+            f.write(json.dumps(nameDict))
 
+        # lammps atom numbers start from 1 to numatoms.
         counter = 1
         for i in range(self.numAtoms):
             string += str(i+1)
@@ -966,9 +988,8 @@ class Structure(object):
             string += " "
             string += str(self.atomCoors[i][2])
             string += "\n"
-        
-        f = open(fileName, 'w')
-        f.write(string)
-        f.close()
+
+        with open(fileName, 'w') as f: 
+            f.write(string)
 
 
