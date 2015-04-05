@@ -2,3 +2,10 @@
 *.skl
 *.xyz
 *.lmp
+*.dat
+*.map
+
+*.bl
+*.co
+
+test.py
