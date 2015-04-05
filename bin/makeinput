@@ -1,0 +1,57 @@
+#!/usr/bin/env python
+
+import os
+import olcaoPy.control as ctrl
+
+def main():
+
+
+
+
+
+
+def removeOldInput:
+    '''
+    This function will delete any old input files present in the current
+    directory.
+    '''
+    fileName = "olcao.dat"
+    if os.path.isfile(fileName):
+        os.remove(fileName)
+    fileName = "structure.dat"
+    if os.path.isfile(fileName):
+        os.remove(fileName)
+    fileName = "kp-scf.dat"
+    if os.path.isfile(fileName):
+        os.remove(fileName)
+    fileName = "kp.pscf.dat"
+    if os.path.isfile(fileName):
+        os.remove(fileName)
+    fileName = "kp-alt.dat"
+    if os.path.isfile(fileName):
+        os.remove(fileName)
+
+    edgeTag = []
+    edgeTag.append("")
+    edgeTag.append("1s_")
+    edgeTag.append("2s_")
+    edgeTag.append("2p_")
+    edgeTag.append("3s_")
+    edgeTag.append("3p_")
+    edgeTag.append("4s_")
+    edgeTag.append("3d_")
+    edgeTag.append("4p_")
+    edgeTag.append("5s_")
+    edgeTag.append("4d_")
+    edgeTag.append("5p_")
+    edgeTag.append("6s_")
+    edgeTag.append("4f_")
+    edgeTag.append("5d_")
+    edgeTag.append("6p_")
+    edgeTag.append("7s_")
+
+    for i in edgeTag:
+        fileName = i + "scfV.dat"
+        if os.path.isfile(fileName):
+            os.remove(fileName)
+
