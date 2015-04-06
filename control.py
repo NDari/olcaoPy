@@ -966,5 +966,5 @@ class Structure(object):
 
         with open(fileName, 'w') as f: 
             f.write(string)
-
+    return self
 
