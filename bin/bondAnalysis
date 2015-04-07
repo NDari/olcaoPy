@@ -46,16 +46,14 @@ options, args = parser.parse_args()
 
 # read the input file
 s = ctrl.Structure(options.iFile)
-if os.path.isfile('analysis.bl'):
-    sys.exit('File "analysis.bl" already exists! Aborting the whole script')
-if os.path.isfile('analysis.co'):
-    sys.exit('File "analysis.co" already exists! Aborting the whole script')
 
 if options.bl or options.coord:
     r = s.bondingList(bf = options.bf)
 
 # carry out the requested action(s)
 if options.bl:
+    if os.path.isfile('analysis.bl'):
+        sys.exit('File "analysis.bl" already exists! Aborting the whole script')
     string = ""
     for i in range(len(r)):
         string += str(i+1)
@@ -73,6 +71,8 @@ if options.bl:
     f.close()
 
 if options.coord:
+    if os.path.isfile('analysis.co'):
+        sys.exit('File "analysis.co" already exists! Aborting the whole script')
     c = s.coordination(bondingList = r)
     string = ""
     for i in range(len(c)):

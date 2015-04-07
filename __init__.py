@@ -1,6 +1,5 @@
-__all__ = ['fileOps', 'control', 'constants', 'structOps']
+__all__ = ['fileOps', 'control', 'constants']
 
 from olcaoPy.fileOps import *
 from olcaoPy.constants import *
 from olcaoPy.control import *
-from olcaoPy.structOps import *
