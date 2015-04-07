@@ -1,0 +1,70 @@
+#!/usr/bin/env python
+
+import olcaoPy.fileOps as fo
+import sys
+import math
+import optparse
+
+# create parser for the argv
+parser = optparse.OptionParser()
+
+parser.add_option('-i', '--input',
+                  action = 'store',
+                  dest = 'iFile',
+                  default = 'gs_scfV-fb.dat',
+                  help = '''
+The input file from which the total potential is constructed. The default is
+the converged olcao ponteial file with the full basis: "gs_scfV-fb.dat".''')
+
+parser.add_option('-r', '--range',
+                  action = 'store',
+                  dest = 'rangex',
+                  default = '5.0',
+                  type = 'float',
+                  help = '''
+The maximum range in the x direction. The default is 5.0 angstrom.''')
+
+
+parser.add_option('-s', '--step',
+                  action = 'store',
+                  dest = 'step',
+                  default = '0.1',
+                  type = 'float',
+                  help = '''
+The size of the step in the x-direction. The default is 0.1 angstrom.''')
+
+# parse the arguments.
+options, args = parser.parse_args()
+
+potFile = fo.readFile(options.iFile)
+As = fo.ScfvPotCoeffs_up(potFile)
+Alphas = fo.ScfvPotAlphas(potFile)
+
+numSteps = int(options.rangex / options.step) + 1
+for k in range(len(As)):
+    potVals = []
+    inc = []
+    r = 0.0
+    for i in range(numSteps):
+        val = 0.0
+        for j in range(len(As[k])):
+            expon = -Alphas[k][j] * r * r
+            val += (As[k][j] * math.exp(expon))
+        potVals.append(val)
+        inc.append(r)
+        r += options.step
+    
+    string = ''
+    for i in range(numSteps):
+        string += (str(inc[i]))
+        string += ' '
+        string += (str(potVals[i]))
+        string += '\n'
+   
+    fileName = "potFn_" + str(k+1) + ".dat"
+    with open(fileName, 'w') as f:
+        f.write(string)
+
+    
+
+
