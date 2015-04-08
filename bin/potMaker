@@ -37,23 +37,38 @@ The size of the step in the x-direction. The default is 0.1 angstrom.''')
 options, args = parser.parse_args()
 
 potFile = fo.readFile(options.iFile)
+
+# extract the spin up coefficients.
 As = fo.ScfvPotCoeffs_up(potFile)
+
+# extract the alphas. they are the same for both spin up and down.
 Alphas = fo.ScfvPotAlphas(potFile)
 
+# determine number of steps we will take over the range.
 numSteps = int(options.rangex / options.step) + 1
+
+# loop over the unique types in the system.
 for k in range(len(As)):
     potVals = []
     inc = []
     r = 0.0
     for i in range(numSteps):
         val = 0.0
+        # loop over each coefficient and alpha combo. calculate the value of
+        # each gaussian function at this point, and add it all all up.
         for j in range(len(As[k])):
-            expon = -Alphas[k][j] * r * r
-            val += (As[k][j] * math.exp(expon))
+            val += (As[k][j] * math.exp(-Alphas[k][j] * r * r))
+        
+        # record total potential at this point.
         potVals.append(val)
+
+        # record the point itself (along x-axis)
         inc.append(r)
+
+        # move to the next point
         r += options.step
     
+    # write the file associated with this type.
     string = ''
     for i in range(numSteps):
         string += (str(inc[i]))
