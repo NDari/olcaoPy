@@ -8,7 +8,7 @@ import sys
 # create a parser for the argv[]
 parser = optparse.OptionParser()
 
-parser.add_option('-l', '--bondlengths',
+parser.add_option('-l',
                   action='store_true',
                   dest='bl',
                   default=False,
@@ -16,14 +16,14 @@ parser.add_option('-l', '--bondlengths',
 The option to print the bonds and their lengths of all the atoms in the system 
 in "analysis.bl". Default is not to print this file.''')
 
-parser.add_option('-i', '--input',
+parser.add_option('-i',
                   action='store',
                   dest='iFile',
                   default="olcao.skl",
                   help='''
 The input file. Default is "olcao.skl".''')
 
-parser.add_option('-f', '--bondingfactor',
+parser.add_option('-f',
                   action='store',
                   dest='bf',
                   default='1.1',
@@ -33,7 +33,7 @@ The bonding factor. Two atoms are considered bonded if the sum of their
 covalent radii times the bonding factor is bigger or equal to their 
 distance from one another. Default is 1.1.''')
 
-parser.add_option('-c', '--coordination',
+parser.add_option('-c',
                   action='store_true',
                   dest='coord',
                   default=False,

@@ -8,7 +8,7 @@ import optparse
 # create parser for the argv
 parser = optparse.OptionParser()
 
-parser.add_option('-i', '--input',
+parser.add_option('-i',
                   action = 'store',
                   dest = 'iFile',
                   default = 'gs_scfV-fb.dat',
@@ -16,7 +16,7 @@ parser.add_option('-i', '--input',
 The input file from which the total potential is constructed. The default is
 the converged olcao ponteial file with the full basis: "gs_scfV-fb.dat".''')
 
-parser.add_option('-r', '--range',
+parser.add_option('-r',
                   action = 'store',
                   dest = 'rangex',
                   default = '5.0',
@@ -25,7 +25,7 @@ parser.add_option('-r', '--range',
 The maximum range in the x direction. The default is 5.0 angstrom.''')
 
 
-parser.add_option('-s', '--step',
+parser.add_option('-s',
                   action = 'store',
                   dest = 'step',
                   default = '0.1',

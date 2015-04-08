@@ -8,21 +8,21 @@ import os
 # create a parser for the argv[]
 parser = optparse.OptionParser()
 
-parser.add_option('-i', '--input', 
+parser.add_option('-i',
                   action='store', 
                   dest='iFile', 
                   default='olcao.skl',
                   help='''
 The input file. Default is "olcao.skl".''')
 
-parser.add_option('-o', '--output', 
+parser.add_option('-o',
                   action='store', 
                   dest='oFile', 
                   default='new.olcao.skl',
                   help='''
 The output file. Default is "new.olcao.skl".''')
 
-parser.add_option('-c', '--convert', 
+parser.add_option('-c',
                   action='store_true', 
                   dest='convCoors', 
                   default=False,
@@ -30,7 +30,7 @@ parser.add_option('-c', '--convert',
 Convert coordinates from cart to frac and vice versa. The default is to not 
 do any conversion.''')
 
-parser.add_option('-b', '--buffer', 
+parser.add_option('-b',
                   action='store', 
                   dest='buf', 
                   default=0.0, 
