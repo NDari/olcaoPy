@@ -29,7 +29,7 @@ parser.add_option('-m',
                  type='float',
                  help='''
 The minimum distance between the first and second elements. The default is
-half the sum of the element's covalent radii. distance is in AU.''')
+quarter of the sum of the element's covalent radii. distance is in AU.''')
 
 
 parser.add_option('-r',
@@ -38,7 +38,7 @@ parser.add_option('-r',
                  type='float',
                  help='''
 The maximum distance between the first and second elements. The default is
-twice the sum of the element's covalent radii. distance is in AU.''')
+thrice the sum of the element's covalent radii. distance is in AU.''')
 
 parser.add_option('-g',
                  action='store',
@@ -68,11 +68,11 @@ rad2 = co.covalRad[options.second.lower()]
 
 # set the minimum range if not passed.
 if not options.rangeMin:
-    options.rangeMin = (rad1 + rad2)/2.0
+    options.rangeMin = (rad1 + rad2)/4.0
 
 # set max range if not passed.
 if not options.rangeMax:
-    options.rangeMax = 2.0 * (rad1 + rad2)
+    options.rangeMax = 3.0 * (rad1 + rad2)
 
 # get the number of iterations:
 numIterations = int((options.rangeMax - options.rangeMin) / options.grain)
