@@ -1,0 +1,130 @@
+#!/usr/bin/env python
+import olcaoPy.control as ctrl
+import olcaoPy.constants as co
+import olcaoPy.fileOps as fo
+import optparse
+import sys
+import os
+import subprocess
+
+# create a parser for the argv[]
+parser = optparse.OptionParser()
+
+parser.add_option('-f',
+                  action='store',
+                  dest='first',
+                  help='''
+The first element.''')
+
+parser.add_option('-s',
+                  action='store',
+                  dest='second',
+                  help='''
+The second element. there is no default value, and it is set to the first 
+element unless explicitly passed.''')
+
+parser.add_option('-m',
+                 action='store',
+                 dest='rangeMin',
+                 type='float',
+                 help='''
+The minimum distance between the first and second elements. The default is
+half the sum of the element's covalent radii. distance is in AU.''')
+
+
+parser.add_option('-r',
+                 action='store',
+                 dest='rangeMax',
+                 type='float',
+                 help='''
+The maximum distance between the first and second elements. The default is
+twice the sum of the element's covalent radii. distance is in AU.''')
+
+parser.add_option('-g',
+                 action='store',
+                 dest='grain',
+                 default='0.01',
+                 type='float',
+                 help='''
+The grain size of the mesh. Number of points that will be calculated is
+int((rangeMax - rangeMin) / grain). Default grain size is 0.01.''')
+
+# parse the arguments.
+options, args = parser.parse_args()
+
+
+# set defaults values if they were not explicitly passed.
+if not options.first:
+    sys.exit("You must provide the name of the first atom.")
+
+if not options.second:
+    options.second = options.first
+
+# get the covalent radii of the two elements. Convert the names of the
+# elements to lower case before requesting their covalent radii as the
+# keys in the covalRad dictionary are in lower case.
+rad1 = co.covalRad[options.first.lower()]
+rad2 = co.covalRad[options.second.lower()]
+
+# set the minimum range if not passed.
+if not options.rangeMin:
+    options.rangeMin = (rad1 + rad2)/2.0
+
+# set max range if not passed.
+if not options.rangeMax:
+    options.rangeMax = 2.0 * (rad1 + rad2)
+
+# get the number of iterations:
+numIterations = int((options.rangeMax - options.rangeMin) / options.grain)
+
+# create an empty structure. set the a, b, and c vectors to be 11 times the
+# sum of the covalent radii of the two atoms. This ensures that there is
+# no significant self interaction. Set the cell angles to 90.0 degrees.
+s = ctrl.Structure()
+box = 11.0 * (rad1 + rad2)
+s.cellInfo = [box, box, box, 90.0, 90.0, 90.0]
+
+# set the names of the atoms, and their initial coordinates. We will be using
+# cartesian coordinates.
+s.coordType = "C"
+s.numAtoms = 2
+s.atomNames = [options.first.lower(), options.second.lower()]
+s.atomCoors = [[0.0, 0.0, 0.0], [0.0, 0.0, options.rangeMin]]
+
+# set other needed parameters in a sane way.
+s.title = "generic title"
+s.spaceGrp = "1_a"
+s.supercell = [1, 1, 1]
+s.cellType = "F"
+
+# initialize the matrices
+energy = []
+dist = []
+
+distance = options.rangeMin
+for i in range(numIterations):
+    if os.path.exists("jobDir"):
+        sys.exit("Directory 'jobDir' exists. Aborting script execution")
+    os.makedirs("jobDir")
+    os.chdir("jobDir")
+    s.writeSkl()
+    command = ". ~/olcao/.olcao && makeinput -nocore > output && olcao"
+    subprocess.call(command, shell=True)
+
+    gsEn = fo.readFile("gs_enrg-fb.dat")
+    energy.append(float(gsEn[-1][4]))
+    dist.append(distance)
+    distance += options.grain
+    os.chdir("..")
+    command = "rm -r jobDir"
+    subprocess.call(command, shell=True)
+    s.atomCoors[1][2] = distance
+
+finArr = []
+for i in range(numIterations):
+    dumArr = []
+    dumArr.append(dist[i])
+    dumArr.append(energy[i])
+    finArr.append(dumArr)
+
+fo.writeFloats("energyOutput", finArr)
