@@ -79,6 +79,19 @@ def writeFloats(fileName, fileArr, splitter = ' '):
     f.close()
     return
 
+# define a function that reads a file containing ONLY floats.
+
+def readFloats(fileName, splitter = '\s+'):
+
+    s = readFile(fileName, splitter = splitter)
+    k = []
+    for i in s:
+        d = []
+        for j in i:
+            d.append(float(j))
+        k.append(d)
+    return k
+
 # Let's define a function that reads a line from a file and splits it,
 # returning a 1D array.
 

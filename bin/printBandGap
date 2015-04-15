@@ -1,0 +1,51 @@
+#!/usr/bin/env python
+
+import olcaoPy.fileOps as fo
+import optparse
+
+# create a parser for the argv[]
+parser = optparse.OptionParser()
+
+parser.add_option('-i',
+                  action='store', 
+                  dest='iFile', 
+                  default='gs_dos-fb.t.plot',
+                  help='''
+The input file. Default is "gs_dos-fb.t.plot".''')
+
+parser.add_option('-o',
+                 action='store',
+                 dest='oFile',
+                 default='bandGap.dat',
+                 help='''
+The output file. Default is "bandGap.dat".''')
+
+# parse the arguments
+options, args = parser.parse_args()
+
+r = fo.readFloats(options.iFile)
+
+for i in range(len(r)):
+    if r[i][0] == 0.0:
+        j = i
+        while j < len(r):
+            if r[j][1] != 0.0:
+                j +=1
+            else:
+                break
+        # j is the start of the bandGap.
+        # lets find its top.
+        k = j + 1
+        while k < len(r):
+            if r[k][1] == 0.0:
+                k += 1
+            else:
+                break
+        string = str(r[k][0] - r[j][0]) + "\n"
+        break
+
+with open(options.oFile, 'w') as f:
+    f.write(string)
+
+
+
