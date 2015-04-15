@@ -56,7 +56,7 @@ def readFile(fileName, splitter = '\s+'):
 
 # Let's define a function to write a file from a 2D array.
 
-def writeFloats(fileName, fileArr, splitter = ' '):
+def writeFile(fileName, fileArr, splitter = ' '):
     """
         This function writes a file with name fileName, from a 2D array. The
         splitter argument is what is to be inserted in between the elements
