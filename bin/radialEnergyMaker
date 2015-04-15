@@ -43,11 +43,18 @@ thrice the sum of the element's covalent radii. distance is in AU.''')
 parser.add_option('-g',
                  action='store',
                  dest='grain',
-                 default='0.01',
+                 default='0.1',
                  type='float',
                  help='''
 The grain size of the mesh. Number of points that will be calculated is
-int((rangeMax - rangeMin) / grain). Default grain size is 0.01.''')
+int((rangeMax - rangeMin) / grain). Default grain size is 0.1.''')
+
+parser.add_option('-o',
+                  action='store',
+                  dest='oFile',
+                  default='energyOutput',
+                  help='''
+The output file. The default is "energyOutput".''')
 
 # parse the arguments.
 options, args = parser.parse_args()
