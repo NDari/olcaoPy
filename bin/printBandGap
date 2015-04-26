@@ -28,13 +28,16 @@ r = fo.readFloats(options.iFile)
 for i in range(len(r)):
     if r[i][0] == 0.0:
         j = i
-        while j < len(r):
+        while j < (len(r) - 1): # ensure we dont go over the length
             if r[j][1] != 0.0:
                 j +=1
             else:
                 break
         # j is the start of the bandGap.
         # lets find its top.
+        if (j == (len(r) - 1)): # we did not find the top of the band
+            string = str(0.0) + "\n"
+            break
         k = j + 1
         while k < len(r):
             if r[k][1] == 0.0:

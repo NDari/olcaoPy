@@ -8,23 +8,16 @@ r = fo.BlNumBonds(s)
 numAtoms = len(r)
 
 f = sum([1 for n in r if n == 0])
-print "0 coordination: Number of atoms", f, "\tPercentage of total" +
-        str(100.0*(float(f)/numAtoms)) + "%"
+print "0 coordination: Number of atoms", f, "\tPercentage of total ", str(100.0*(float(f)/numAtoms)) + "%"
 f = sum([1 for n in r if n == 1])
-print "1 coordination: Number of atoms", f, "\tPercentage of total" +
-        str(100.0*(float(f)/numAtoms)) + "%"
+print "1 coordination: Number of atoms", f, "\tPercentage of total ", str(100.0*(float(f)/numAtoms)) + "%"
 f = sum([1 for n in r if n == 2])
-print "2 coordination: Number of atoms", f, "\tPercentage of total" +
-        str(100.0*(float(f)/numAtoms)) + "%"
+print "2 coordination: Number of atoms", f, "\tPercentage of total ", str(100.0*(float(f)/numAtoms)) + "%"
 f = sum([1 for n in r if n == 3])
-print "3 coordination: Number of atoms", f, "\tPercentage of total" +
-        str(100.0*(float(f)/numAtoms)) + "%"
+print "3 coordination: Number of atoms", f, "\tPercentage of total ", str(100.0*(float(f)/numAtoms)) + "%"
 f = sum([1 for n in r if n == 4])
-print "4 coordination: Number of atoms", f, "\tPercentage of total" +
-        str(100.0*(float(f)/numAtoms)) + "%"
+print "4 coordination: Number of atoms", f, "\tPercentage of total ", str(100.0*(float(f)/numAtoms)) + "%"
 f = sum([1 for n in r if n == 5])
-print "5 coordination: Number of atoms", f, "\tPercentage of total" +
-        str(100.0*(float(f)/numAtoms)) + "%"
+print "5 coordination: Number of atoms", f, "\tPercentage of total ", str(100.0*(float(f)/numAtoms)) + "%"
 f = sum([1 for n in r if n == 6])
-print "6 coordination: Number of atoms", f, "\tPercentage of total" +
-        str(100.0*(float(f)/numAtoms)) + "%"
+print "6 coordination: Number of atoms", f, "\tPercentage of total ", str(100.0*(float(f)/numAtoms)) + "%"
