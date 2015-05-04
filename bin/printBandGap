@@ -35,11 +35,11 @@ for i in range(len(r)):
                 break
         # j is the start of the bandGap.
         # lets find its top.
-        if (j == (len(r) - 2)): # we did not find the top of the band
+        if (j == (len(r) - 1)): # we did not find the top of the band
             string = str(0.0) + "\n"
             break
         k = j + 1
-        while k < len(r):
+        while k < (len(r) - 1):
             if r[k][1] == 0.0:
                 k += 1
             else:
