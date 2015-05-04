@@ -1,14 +1,19 @@
 #!/usr/bin/env python
 
 import olcaoPy.control as ctrl
-import optparse
+import argparse
 import os
 import sys
 
-# create a parser for the argv[]
-parser = optparse.OptionParser()
+desc = '''
+bondAnalysis provides general analysis of bonds in a system, usually 
+contained in the 'olcao.skl' file.'''
 
-parser.add_option('-l',
+
+# create a parser for the argv[]
+parser = argparse.ArgumentParser(description=desc)
+
+parser.add_argument('-l', '--bondlength',
                   action='store_true',
                   dest='bl',
                   default=False,
@@ -16,24 +21,24 @@ parser.add_option('-l',
 The option to print the bonds and their lengths of all the atoms in the system 
 in "analysis.bl". Default is not to print this file.''')
 
-parser.add_option('-i',
+parser.add_argument('-i', '--input',
                   action='store',
                   dest='iFile',
                   default="olcao.skl",
                   help='''
 The input file. Default is "olcao.skl".''')
 
-parser.add_option('-f',
+parser.add_argument('-f', '--bondfactor',
                   action='store',
                   dest='bf',
                   default='1.1',
-                  type='float',
+                  type=float,
                   help='''
 The bonding factor. Two atoms are considered bonded if the sum of their 
 covalent radii times the bonding factor is bigger or equal to their 
 distance from one another. Default is 1.1.''')
 
-parser.add_option('-c',
+parser.add_argument('-c', '--coordination',
                   action='store_true',
                   dest='coord',
                   default=False,

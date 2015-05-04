@@ -16,7 +16,7 @@ The input file. Default is "gs_dos-fb.t.plot".''')
 parser.add_option('-o',
                  action='store',
                  dest='oFile',
-                 default='bandGap.dat',
+                 default='bandWidth.dat',
                  help='''
 The output file. Default is "bandGap.dat".''')
 
@@ -33,18 +33,15 @@ for i in range(len(r)):
                 j +=1
             else:
                 break
-        # j is the start of the bandGap.
-        # lets find its top.
-        if (j == (len(r) - 2)): # we did not find the top of the band
-            string = str(0.0) + "\n"
-            break
-        k = j + 1
-        while k < len(r):
-            if r[k][1] == 0.0:
-                k += 1
+        # j is the top of the valence band (the start of the fermi-level)
+        # lets find the botton of the valence band.
+        k = j - 1
+        while k > 0:
+            if r[k][1] != 0.0:
+                k -= 1
             else:
                 break
-        string = str(r[k][0] - r[j][0]) + "\n"
+        string = str(r[j][0] - r[k][0]) + "\n"
         break
 
 with open(options.oFile, 'w') as f:
