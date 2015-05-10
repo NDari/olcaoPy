@@ -35,6 +35,9 @@ for i in range(len(r)):
                 break
         # j is the top of the valence band (the start of the fermi-level)
         # lets find the botton of the valence band.
+        if (j == (len(r) - 1)): # we did not find the top of the band
+            string = str(0.0) + "\n"
+            break
         k = j - 1
         while k > 0:
             if r[k][1] != 0.0:
