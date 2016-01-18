@@ -47,24 +47,24 @@ The option to print the coordination of atoms to the "analysis.co" file.
 The default is to not print this file.''')
 
 # parse the arguments
-options, args = parser.parse_args()
+args = parser.parse_args()
 
 # check that we will not overwrite existing files.
-if options.bl:
+if args.bl:
     if os.path.isfile('analysis.bl'):
         sys.exit('File "analysis.bl" already exists! Aborting the whole script')
-if options.coord:
+if args.coord:
     if os.path.isfile('analysis.co'):
         sys.exit('File "analysis.co" already exists! Aborting the whole script')
 
 # read the input file
-s = ctrl.Structure(options.iFile)
+s = ctrl.Structure(args.iFile)
 
-if options.bl or options.coord:
-    r = s.bondingList(bf = options.bf)
+if args.bl or args.coord:
+    r = s.bondingList(bf = args.bf)
 
 # carry out the requested action(s)
-if options.bl:
+if args.bl:
     string = ""
     for i in range(len(r)):
         string += str(i+1)
@@ -81,7 +81,7 @@ if options.bl:
     f.write(string)
     f.close()
 
-if options.coord:
+if args.coord:
     c = s.coordination(bondingList = r)
     string = ""
     for i in range(len(c)):

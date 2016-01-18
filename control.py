@@ -951,7 +951,7 @@ class Structure(object):
             nameDict[numTypes[i]] = counter
             counter += 1
         # print the mapping between element names and type IDs
-        with open('skl_lmp.map', 'w') as f:
+        with open(fileName, 'w') as f:
             f.write(json.dumps(nameDict))
 
         # lammps atom numbers start from 1 to numatoms.
