@@ -24,7 +24,7 @@
 import numpy as np
 import re
 import sys
-import constants as co
+import olcaoPy.constants as co
 
 ### Generic functions.
 

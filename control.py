@@ -267,7 +267,7 @@ class Structure(object):
 
         with open(fileName, "w") as f:
             f.write(string)
-        
+
         return self
 
     def writeXyz(self, comment = None, fileName = "out.xyz" ):
@@ -297,10 +297,11 @@ class Structure(object):
             string += (elementalNames[i][:1].upper() + elementalNames[i][1:])
             string += " "
             string += (" ".join(str(x) for x in self.atomCoors[i]))
-   
+
+        string += "\n"
         with open(fileName, 'w') as f:
             f.write(string)
-        
+
         return self
 
     def mutate(self, mag, prob):
@@ -911,7 +912,7 @@ class Structure(object):
         '''
         This function prints a file, "data.lmp" by default, that can
         be used as input to LAMMPS. this input is used by lammps to
-        determine the location and the types of the atoms in the 
+        determine the location and the types of the atoms in the
         system.
         '''
         # make sure we are not overwriting a file already made.
@@ -964,7 +965,6 @@ class Structure(object):
             string += (" ".join(str(x) for x in self.atomCoors[i]))
             string += "\n"
 
-        with open(fileName, 'w') as f: 
+        with open(fileName, 'w') as f:
             f.write(string)
         return self
-

@@ -1,0 +1,197 @@
+#!/usr/bin/env python2
+
+import olcaoPy.fileOps as fo
+import olcaoPy.control as ctrl
+import os
+import re
+import shutil
+import sys
+import subprocess
+import multiprocessing
+import random
+import copy
+import numpy as np
+
+
+class Candidate(object):
+    def __init__(self, struct, candidName):
+        """
+        candidate object
+        """
+        self.struct = struct
+        self.fitness = 0.0
+        self.velocity = np.zeros((self.struct.numAtoms, 3), dtype=np.float)
+        self.pBestStruct = struct.clone()
+        self.pBestFitness = 1000000
+        self.name = candidName
+
+    def initPersonalBests(self):
+        self.pBestFitness = self.fitness
+        self.pBestStruct = self.struct.clone()
+        return self
+
+    def updatePersonalBests(self):
+        if self.fitness < self.pBestFitness:
+            self.pBestFitness = self.fitness
+            self.pBestStruct = self.struct.clone()
+        return self
+
+    def moveTo(self, other):
+        self.velocity = 0.729 * (self.velocity +
+                (np.random.uniform(size=self.velocity.shape) * 2.05 * (self.pBestStruct.atomCoors - self.struct.atomCoors)) +
+                (np.random.uniform(size=self.velocity.shape) * 2.05 * (other.pBestStruct.atomCoors - self.struct.atomCoors)))
+        self.struct.atomCoors += self.velocity
+
+        return self
+
+def evalFitness(candidate):
+    if not os.path.exists(candidate.name):
+        sys.exit("Directory " + name + " does not exist.")
+    os.chdir(candidate.name)
+    print(os.getcwd())
+    candidate.struct.writeLAMMPS()
+    subprocess.call("lammps < in.energy> output", shell=True)
+    os.chdir("..")
+
+def getRes(candidate):
+    os.chdir(candidate.name)
+    found = False
+    with open("log.lammps") as f:
+        for line in f:
+            line.strip()
+            if found:
+                fitness = re.split('\s+', line)[-2]
+                print("Fitness for candidate {} is {}".format(candidate.name, fitness))
+                candidate.fitness = float(fitness)
+                break
+            else:
+                if "Energy initial, next-to-last, final =" in line:
+                    found = True
+
+    found = False
+    with open("out.xyz") as f:
+        for line in f:
+            line.strip()
+            if found:
+                words = re.split('\s+', line)
+                candidate.struct.atomCoors[int(words[0])-1][0] = float(words[1])
+                candidate.struct.atomCoors[int(words[0])-1][1] = float(words[2])
+                candidate.struct.atomCoors[int(words[0])-1][2] = float(words[3])
+            else:
+                if "ITEM: ATOMS id x y z" in line:
+                    found = True
+
+    os.remove("data.lmp")
+    os.chdir("..")
+    return
+
+def initCoors(candidate):
+    # seed the random number generator with current system clock
+    random.seed()
+
+    candidate.struct.toFrac()
+    for i in range(candidate.struct.numAtoms):
+        candidate.struct.atomCoors[i][0] += (1.0 * random.random() - 0.5)
+        candidate.struct.atomCoors[i][1] += (1.0 * random.random() - 0.5)
+        candidate.struct.atomCoors[i][2] += (1.0 * random.random() - 0.5)
+
+
+    candidate.struct.applyPBC()
+    candidate.struct.toCart()
+    return
+
+def initVelocities(candidate, scalingFactor=3.0):
+    for i in range(candidate.struct.numAtoms):
+        candidate.velocity[i][0] = scalingFactor* (2.0 * random.random() - 1.0)
+        candidate.velocity[i][1] = scalingFactor* (2.0 * random.random() - 1.0)
+        candidate.velocity[i][2] = scalingFactor* (2.0 * random.random() - 1.0)
+    return
+
+def main():
+    numWeightPairs = 2
+    numCandids = 8
+    numProcs = 4
+
+    if os.path.isfile("gBest.xyz"):
+        sys.exit("gBest.xyz exists. please back it up, delete, and restart.")
+
+    s = ctrl.Structure("olcao.skl")
+    names = [str(i) for i in range(numCandids)]
+
+
+    swarm = []
+
+    for i in range(len(names)):
+        swarm.append(Candidate(s.clone(), names[i]))
+
+    # initialize swarm members
+    for i in swarm:
+        initCoors(i)
+        initVelocities(i)
+
+    for i in names:
+        shutil.rmtree(i)
+        os.makedirs(i)
+        shutil.copyfile("in.energy", i+"/in.energy")
+        shutil.copyfile("C.tersoff", i+"/C.tersoff")
+
+    if (len(sys.argv) > 1):
+        if sys.argv[1] == "-c":
+            swarm[numCandids - 1].weights = fo.readFloats("contWeights")
+        else:
+            sys.exit("Unknown command line parameter")
+
+    pool = multiprocessing.Pool(numProcs)
+    for i in swarm:
+        pool.apply_async(evalFitness, (i,))
+    pool.close()
+    pool.join()
+
+    for i in swarm:
+        getRes(i)
+        print(i.fitness)
+        i.initPersonalBests()
+        print(i.pBestFitness)
+
+    iteration = 0;
+    while (iteration < 100):
+        gb = 0
+        for i in range(1, len(swarm)):
+            if swarm[i].pBestFitness < swarm[gb].pBestFitness:
+                gb = i
+
+        print("global best in iteration", iteration, " is candidate ", gb)
+        print("The lowest energy is ", swarm[gb].pBestFitness, " ev")
+
+        swarm[gb].pBestStruct.writeXyz(fileName="iter.xyz")
+        subprocess.call("cat iter.xyz >> gBest.xyz", shell=True)
+        os.remove("iter.xyz")
+
+        s = 0
+        q = 0
+        for i in swarm:
+            s += i.pBestFitness
+            q += i.fitness
+
+        print("The average pBest fitness of this round is " + str(s/len(swarm)))
+        print("The average fitness of this round is " + str(q/len(swarm)))
+
+
+
+        for i in swarm:
+            i.moveTo(swarm[gb])
+
+        pool = multiprocessing.Pool(numProcs)
+        for i in swarm:
+            pool.apply_async(evalFitness, (i,))
+        pool.close()
+        pool.join()
+
+        for i in swarm:
+            getRes(i)
+            i.updatePersonalBests()
+
+        iteration +=1
+
+if __name__ == "__main__":
+    main()
