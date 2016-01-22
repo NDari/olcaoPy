@@ -88,7 +88,7 @@ class Structure(object):
                 self.atomCoors = fo.XyzCoors(xyz)
                 self.atomNames = fo.XyzAtomNames(xyz)
                 self.spaceGrp = "1_a" # no symmetry info in xyz files.
-                self.supercell = np.ones(3) # no super cell.
+                self.supercell = [1, 1, 1] # no super cell.
                 self.cellType = "F" # always "full" type in xyz files.
 
                 self.cellInfo = self.computeCellInfo(buf)
