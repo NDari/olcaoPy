@@ -1,49 +1,46 @@
-# This package contains all the operations involving reading files, reading
-# lines, writing files, and extracting information from specific files
-# encountered in an OLCAO job. The overall idea is to be as general as
-# possible, while also providing specific functions which work with specific
-# files. For instance, it is common to wish to extract the number of atoms of
-# a system under study. This information is contained in many locations, so
-# we will have specific functions to extract it from olcao.skl file, and
-# structure.dat file, and so on. This makes the code very specific, and not
-# pretty. However, a user may wish to use these low level functions and
-# wrap them in a higher level function that get the atomic coordinates
-# by looking at the file it is instructed to read (either olcao.skl or
-# structure.dat) and call the right low level function.
-# the idea is for this package (and other packages delevoped so far) is
-# to be extended by users, as they encounter different files, and need to
-# exctract different things from them. thus we will have one repository
-# in this packages to reduce duplicate efforts.
-# NOTE: you can go between the various sections (or file types) in this
-# code by searching for the "###" tag.
+"""
 
-# version 0.x - 1.0 2013-2014 Naseer A. Dari, Computational Physics Group.
-# University of Missouri - Kansas City
+The fileOps module provides reading and writing oprations on common files.
 
-# import needed modules
+ This package contains all the operations involving reading files, reading
+ lines, writing files, and extracting information from specific files
+ encountered in an OLCAO job. The overall idea is to be as general as
+ possible, while also providing specific functions which work with specific
+ files. For instance, it is common to wish to extract the number of atoms of
+ a system under study. This information is contained in many locations, so
+ we will have specific functions to extract it from olcao.skl file, and
+ structure.dat file, and so on. This makes the code very specific, and not
+ pretty. However, a user may wish to use these low level functions and
+ wrap them in a higher level function that get the atomic coordinates
+ by looking at the file it is instructed to read (either olcao.skl or
+ structure.dat) and call the right low level function.
+ the idea is for this package (and other packages delevoped so far) is
+ to be extended by users, as they encounter different files, and need to
+ exctract different things from them. thus we will have one repository
+ in this packages to reduce duplicate efforts.
+
+ version 0.x - 1.0 2013-2014 Naseer A. Dari, Computational Physics Group.
+ University of Missouri - Kansas City
+"""
+
 import numpy as np
 import re
 import sys
-import olcaoPy.constants as co
 
-### Generic functions.
-
-# Let's define a function to read a file returning a 2D array.
-
-def readFile(fileName, splitter = '\s+'):
+def readFile(fileName, splitter='\s+'):
     """
-        This function reads a file, returning a 2D array A(x,y)
-        
-        x > line number
-        y > element number
-        
-        where the elements in the line are created by splitting the line
-        according to the splitter argument. The default values for the splitter
-        is one or more spaces.
-        """
+    This function reads a file, returning a 2D array A(x,y)
+
+    x > line number
+    y > element number
+
+    where the elements in the line are created by splitting the line
+    according to the splitter argument. The default values for the splitter
+    is one or more spaces.
+    """
     array = []
     f = open(fileName, 'r')
-    
+
     # hold all the lines in the file, by reading all of it, and
     # stripping the newline at the end of each line.
     lines = [line.strip() for line in f.readlines()]
@@ -54,34 +51,32 @@ def readFile(fileName, splitter = '\s+'):
     f.close()
     return array
 
-# Let's define a function to write a file from a 2D array.
-
-def writeFile(fileName, fileArr, splitter = ' '):
+def writeFile(fileName, fileArr, splitter=' '):
     """
-        This function writes a file with name fileName, from a 2D array. The
-        splitter argument is what is to be inserted in between the elements
-        of the array, and its default is a space. all elements in the array
-        passed are automatically converted to strings.
-        """
+    This function writes a file with name fileName, from a 2D array. The
+    splitter argument is what is to be inserted in between the elements
+    of the array, and its default is a space. all elements in the array
+    passed are automatically converted to strings.
+    """
     f = open(fileName, 'w')
-    
+
     string = ""
-    
+
     for line in range(len(fileArr)):
         # first, convert all the words to strings.
         l = [str(word) for word in fileArr[line]]
         string += splitter.join(l)
-        
+
         # add the newline before next line
         string += "\n"
-    
+
     f.write(string)
     f.close()
     return
 
 # define a function that reads a file containing ONLY floats.
 
-def readFloats(fileName, splitter = '\s+'):
+def readFloats(fileName, splitter='\s+'):
 
     s = readFile(fileName, splitter = splitter)
     k = []
@@ -95,14 +90,14 @@ def readFloats(fileName, splitter = '\s+'):
 # Let's define a function that reads a line from a file and splits it,
 # returning a 1D array.
 
-def prepLine(fileName, line, splitter = '\s+'):
+def prepLine(fileName, line, splitter='\s+'):
     """
-        This function takes a fileName, and reads the next line, then splits it by
-        the passed splitter, returning a 1D array. The default for the splitter is
-        one or more spaces.
-        If file's name is passed as "", then the line (or object to be split) must
-        be passed.
-        """
+    This function takes a fileName, and reads the next line, then splits it by
+    the passed splitter, returning a 1D array. The default for the splitter is
+    one or more spaces.
+    If file's name is passed as "", then the line (or object to be split) must
+    be passed.
+    """
     values = []
     if fileName != "" and line == "":
         line = fileName.readline()
@@ -116,16 +111,11 @@ def prepLine(fileName, line, splitter = '\s+'):
                  "\n" + "Dont Know what to do. Aborting script.")
         return values
 
-### olcao.skl file functions.
-
-# Now lets define functions which return various information contained
-# in olcao.skl, such as the title, number of atoms, etc.
-
 def SklTitle(skl):
     """
-        This function returns the title contained in an array which was created
-        by reading the olcao.skl file.
-        """
+    This function returns the title contained in an array which was created
+    by reading the olcao.skl file.
+    """
     title = ""
     # skip first line with label "title"
     for i in range(1, len(skl)):
@@ -141,10 +131,10 @@ def SklTitle(skl):
 
 def SklCellInfo(skl):
     """
-        This function returns the cell vectors a, b, and c as well as the cell
-        angles alpha, beta, and gamma in a 1D array:
-        [a, b, c, alpha, beta, gamma]
-        """
+    This function returns the cell vectors a, b, and c as well as the cell
+    angles alpha, beta, and gamma in a 1D array:
+    [a, b, c, alpha, beta, gamma]
+    """
     cellInfo = np.zeros(shape=(6))
     # Find the line in skl containing the file, which starts with cell
     for i in range(len(skl)):
@@ -156,10 +146,10 @@ def SklCellInfo(skl):
 
 def SklCoordType(skl):
     """
-        This function returns the coordinate type used in an array which was
-        created from reading the olcao.skl file. The coordinate type returned is
-        either "F" for fractional, or "C" for cartesian.
-        """
+    This function returns the coordinate type used in an array which was
+    created from reading the olcao.skl file. The coordinate type returned is
+    either "F" for fractional, or "C" for cartesian.
+    """
     # Find the line in skl containing the file, which starts with cell
     for i in range(len(skl)):
         if (skl[i][0] == 'cell'):
@@ -173,9 +163,9 @@ def SklCoordType(skl):
 
 def SklNumAtoms(skl):
     """
-        This function extracts the number of atoms from an array which was created
-        from reading the olcao.skl file.
-        """
+    This function extracts the number of atoms from an array which was created
+    from reading the olcao.skl file.
+    """
     # Find the line in skl containing the file, which starts with cell
     for i in range(len(skl)):
         if (skl[i][0] == 'cell'):
@@ -184,9 +174,9 @@ def SklNumAtoms(skl):
 
 def SklCoors(skl):
     """
-        This function returns the coordinates of the atoms contained in an array
-        which was created from reading the olcao.skl file.
-        """
+    This function returns the coordinates of the atoms contained in an array
+    which was created from reading the olcao.skl file.
+    """
     numAtoms = SklNumAtoms(skl)
     a = 0
     coors = np.zeros(shape=(numAtoms,3))
@@ -202,13 +192,13 @@ def SklCoors(skl):
 
 def SklAtomNames(skl):
     """
-        This function returns the atomic names contained in an arraywhich was
-        created from reading the olcao.skl file.
-        """
+    This function returns the atomic names contained in an arraywhich was
+    created from reading the olcao.skl file.
+    """
     a = 0
     # get the number of atoms.
     numAtoms = SklNumAtoms(skl)
-    aNames = np.chararray(shape=(numAtoms), itemsize = 2)
+    aNames = np.chararray(shape=(numAtoms), itemsize=2)
     for i in range(len(skl)):
         if (skl[i][0] == 'cell'):
             # The list of coordinates starts 3 lines after "cell".
@@ -216,7 +206,7 @@ def SklAtomNames(skl):
             break
     for i in range(numAtoms):
         name      = skl[a+i][0]
-        
+
         # make sure that the name starts with a lower case letter. this is
         # the convension used throughout olcao.
         name      = name[0].lower() + name[1:]
@@ -225,16 +215,16 @@ def SklAtomNames(skl):
 
 def SklSpaceGrp(skl):
     """
-        This function returns the space group number contained in an array which
-        was created from reading the olcao.skl file.
-        """
+    This function returns the space group number contained in an array which
+    was created from reading the olcao.skl file.
+    """
     return skl[-3][1] # space group number is 3rd from bottom.
 
 def SklSupercell(skl):
     """
-        This function returns an array corresponding to the supercell contained in
-        an array created from reading the olcao.skl file.
-        """
+    This function returns an array corresponding to the supercell contained in
+    an array created from reading the olcao.skl file.
+    """
     supercell = np.zeros(shape=(3), dtype = int)
     # supercell info is 2nd from bottom.
     supercell[0:3] = skl[-2][1:4]
@@ -242,9 +232,9 @@ def SklSupercell(skl):
 
 def SklSupercellMirror(skl):
     """
-        This function returns an array corresponding to the supercell mirror
-        contained in an array created from reading the olcao.skl file.
-        """
+    This function returns an array corresponding to the supercell mirror
+    contained in an array created from reading the olcao.skl file.
+    """
     supercellMirror = np.zeros(shape=(3), dtype = int)
     # supercell info is 2nd from bottom. note that this information is
     # optional, so it may not be present. if not, we simply return the
@@ -255,9 +245,9 @@ def SklSupercellMirror(skl):
 
 def SklCellType(skl):
     """
-        This function returns the cell type for the olcao.skl file, which is
-        typically either "full" or "prim".
-        """
+    This function returns the cell type for the olcao.skl file, which is
+    typically either "full" or "prim".
+    """
     if skl[-1][0] == "full":
         return "F"
     elif skl[-1][0] == "prim":
@@ -268,22 +258,22 @@ def SklCellType(skl):
 ### .xyz file functions.
 
 def XyzNumAtoms(xyz):
-    '''
-        This function returns the number of atoms in an xyz file that was read
-        with the readFile function.
-        '''
+    """
+    This function returns the number of atoms in an xyz file that was read
+    with the readFile function.
+    """
     return int(xyz[0][0])
 
 def XyzComment(xyz):
-    '''
-        This function returns the comment line in an xyz file.
-        '''
+    """
+    This function returns the comment line in an xyz file.
+    """
     return " ".join(xyz[1])
 
 def XyzAtomNames(xyz):
-    '''
-        This function returns the atomic names in an xyz file
-        '''
+    """
+    ThiS function returns the atomic names in an xyz file
+    """
     numAtoms = XyzNumAtoms(xyz)
     atomNames = []
     for i in range(numAtoms):
@@ -293,9 +283,9 @@ def XyzAtomNames(xyz):
     return atomNames
 
 def XyzCoors(xyz):
-    '''
-        This function returns the atomic coordinates in an xyz file
-        '''
+    """
+    This function returns the atomic coordinates in an xyz file
+    """
     numAtoms = XyzNumAtoms(xyz)
     coors = np.zeros(shape=(numAtoms, 3))
     for i in range(numAtoms):
@@ -314,17 +304,17 @@ def XyzCoors(xyz):
 
 def ScfvNumTypes(scfv):
     """
-        This function returns the number of distinct types in the system, contained
-        in an array which was created from reading the scfV.dat file.
-        """
+    This function returns the number of distinct types in the system, contained
+    in an array which was created from reading the scfV.dat file.
+    """
     return int(scfv[0][1])
 
 def ScfvNumTermsPerType(scfv):
     """
-        This function returns the number of terms for each unique type in the system
-        contained in an array which was created from reading the scfV.dat file or the
-        gs_ equavalent file.
-        """
+    This function returns the number of terms for each unique type in the system
+    contained in an array which was created from reading the scfV.dat file or the
+    gs_ equavalent file.
+    """
     # get the number of unique types.
     nTypes = ScfvNumTypes(scfv)
     termsPerType = np.zeros(shape=(nTypes,1), dtype = int)
@@ -344,18 +334,18 @@ def ScfvNumTermsPerType(scfv):
 
 def ScfvPotCoeffs_up(scfv):
     """
-        This function returns the A coefficients for each unique type, as a 2-D array
-        A[x][y] where
-        
-        x > type number
-        y > coeffecient number
-        
-        A is contructed from an array passed to this function which is in turn
-        contrusted from reading the scfV.dat file.
-        
-        This function returns the coeffcients with spin UP. these are used as
-        THE coefficients for exchange-correlation functionals that are spinless.
-        """
+    This function returns the A coefficients for each unique type, as a 2-D array
+    A[x][y] where
+
+    x > type number
+    y > coeffecient number
+
+    A is contructed from an array passed to this function which is in turn
+    contrusted from reading the scfV.dat file.
+
+    This function returns the coeffcients with spin UP. these are used as
+    THE coefficients for exchange-correlation functionals that are spinless.
+    """
     # get the number of unique types.
     nTypes = ScfvNumTypes(scfv)
     # get num terms per each type.
@@ -379,18 +369,18 @@ def ScfvPotCoeffs_up(scfv):
 
 def ScfvPotCoeffs_dn(scfv):
     """
-        This function returns the A coefficients for each unique type, as a 2-D array
-        A[x][y] where
-        
-        x > type number
-        y > coeffecient number
-        
-        A is contructed from an array passed to this function which is in turn
-        contrusted from reading the scfV.dat file.
-        
-        This function returns the coeffcients with spin DOWN. these are used only
-        with exchange-correlation functionals that include spin.
-        """
+    This function returns the A coefficients for each unique type, as a 2-D array
+    A[x][y] where
+
+    x > type number
+    y > coeffecient number
+
+    A is contructed from an array passed to this function which is in turn
+    contrusted from reading the scfV.dat file.
+
+    This function returns the coeffcients with spin DOWN. these are used only
+    with exchange-correlation functionals that include spin.
+    """
     # get the number of unique types.
     nTypes = ScfvNumTypes(scfv)
     # get num terms per each type.
@@ -418,17 +408,17 @@ def ScfvPotCoeffs_dn(scfv):
 
 def ScfvPotCoeffs(scfv):
     """
-        This function returns the A coefficients for each unique type, as a 3-D array
-        A[x][y][z] where
-        
-        x > type number
-        y > 0 for spin up, 1 for spin down
-        z > coeffecient number
-        
-        A is contructed from an array passed to this function which is in turn
-        contrusted from reading the scfV.dat file.
-        
-        """
+    This function returns the A coefficients for each unique type, as a 3-D array
+    A[x][y][z] where
+
+    x > type number
+    y > 0 for spin up, 1 for spin down
+    z > coeffecient number
+
+    A is contructed from an array passed to this function which is in turn
+    contrusted from reading the scfV.dat file.
+
+    """
     # get the number of unique types.
     nTypes = ScfvNumTypes(scfv)
     # create a numpy array of objects, where each object is a array of
@@ -442,20 +432,20 @@ def ScfvPotCoeffs(scfv):
         totalSpin.append(spinUp[i])
         totalSpin.append(spinDn[i])
         coeffs[i] = totalSpin
-    
+
     return coeffs
 
 def ScfvPotAlphas(scfv):
     """
-        This function returns the alphas for each unique type, as a 2-D array
-        A[x][y] where
-        
-        x > type number
-        y > alpha number
-        
-        A is contructed from an array passed to this function which is in turn
-        contrusted from reading the scfV.dat file.
-        """
+    This function returns the alphas for each unique type, as a 2-D array
+    A[x][y] where
+
+    x > type number
+    y > alpha number
+
+    A is contructed from an array passed to this function which is in turn
+    contrusted from reading the scfV.dat file.
+    """
     # get the number of unique types.
     nTypes = ScfvNumTypes(scfv)
     # get num terms per each type.
@@ -479,15 +469,15 @@ def ScfvPotAlphas(scfv):
 
 def ScfvFullRhos(scfv):
     """
-        This function returns the full rho for each unique type, as a 2-D array
-        A[x][y] where
-        
-        x > type number
-        y > full rho
-        
-        A is contructed from an array passed to this function which is in turn
-        contrusted from reading the scfV.dat file.
-        """
+    This function returns the full rho for each unique type, as a 2-D array
+    A[x][y] where
+
+    x > type number
+    y > full rho
+
+    A is contructed from an array passed to this function which is in turn
+    contrusted from reading the scfV.dat file.
+    """
     # get the number of unique types.
     nTypes = ScfvNumTypes(scfv)
     # get num terms per each type.
@@ -511,16 +501,16 @@ def ScfvFullRhos(scfv):
 
 def ScfvPartRhos(scfv):
     """
-        This function returns the A coefficients for each unique type, as a 2-D array
-        A[x][y] where
-        
-        x > type number
-        y > partial rho number
-        
-        A is contructed from an array passed to this function which is in turn
-        contrusted from reading the scfV.dat file. If such array is not passed, it
-        is contructed by reading that file.
-        """
+    This function returns the A coefficients for each unique type, as a 2-D array
+    A[x][y] where
+
+    x > type number
+    y > partial rho number
+
+    A is contructed from an array passed to this function which is in turn
+    contrusted from reading the scfV.dat file. If such array is not passed, it
+    is contructed by reading that file.
+    """
     # get the number of unique types.
     nTypes = ScfvNumTypes(scfv)
     # get num terms per each type.
@@ -549,35 +539,35 @@ def ScfvPartRhos(scfv):
 
 def SdatCellVecs(sdat):
     """
-        This function returns a 2-D array containing the cell vectors in the
-        Cartesian coordinates in this form:
-        
-        ax ay az
-        bx by bz
-        cx cy cz
-        
-        from a 2D array which is passed to this function. The passed array is
-        constructed from reading the structure.dat file.
-        """
+    This function returns a 2-D array containing the cell vectors in the
+    Cartesian coordinates in this form:
+
+    ax ay az
+    bx by bz
+    cx cy cz
+
+    from a 2D array which is passed to this function. The passed array is
+    constructed from reading the structure.dat file.
+    """
     cellVecs = np.zeros(shape=(3,3))
     cellVecs[0][0:3] = sdat[1][0:3]
     cellVecs[1][0:3] = sdat[2][0:3]
     cellVecs[2][0:3] = sdat[3][0:3]
-    
+
     return cellVecs
 
 def SdatNumAtomSites(sdat):
     """
-        This function returns the number of atoms contained in a 2D array contructed
-        from reading the structure.dat file.
-        """
+    This function returns the number of atoms contained in a 2D array contructed
+    from reading the structure.dat file.
+    """
     return int(sdat[5][0])
 
 def SdatAtomTypes(sdat):
     """
-        This function returns the types of the atoms contained in a 2D array which
-        was contructed from reading the structure.dat file.
-        """
+    This function returns the types of the atoms contained in a 2D array which
+    was contructed from reading the structure.dat file.
+    """
     numAtoms = SdatNumAtomSites(sdat)
     types = np.zeros(shape=(numAtoms), dtype = int)
     for atom in xrange(numAtoms):
@@ -587,10 +577,10 @@ def SdatAtomTypes(sdat):
 
 def SdatAtomSites(sdat):
     """
-        This function returns the atomic coordinates contained in a 2D array which
-        was contructed from reading the structure.dat file. Note that the coors in
-        the structure.dat file are in atomic units.
-        """
+    This function returns the atomic coordinates contained in a 2D array which
+    was contructed from reading the structure.dat file. Note that the coors in
+    the structure.dat file are in atomic units.
+    """
     numAtoms = SdatNumAtomSites(sdat)
     coors = np.zeros(shape=(numAtoms,3))
     for atom in xrange(numAtoms):
@@ -625,10 +615,10 @@ def SdatNumPotSites(sdat):
     return numPotSites
 
 def SdatPotTypeAssn(sdat):
-    '''
-        This function return the pot type assignment of all the atoms in the
-        system.
-        '''
+    """
+    This function return the pot type assignment of all the atoms in the
+    system.
+    """
     numPotSites = SdatNumPotSites(sdat)
     potSiteAssn = np.zeros(shape=(numPotSites), dtype = int)
     if sdat[i][0] == "NUM_POTENTIAL_SITES":
@@ -642,10 +632,10 @@ def SdatPotTypeAssn(sdat):
     return potSiteAssn
 
 def SdatPotSites(sdat):
-    '''
-        The function returns the location of the potential sites for
-        a structure, written in the structure.dat file.
-        '''
+    """
+    The function returns the location of the potential sites for
+    a structure, written in the structure.dat file.
+    """
     numPotSites = SdatNumPotSites(sdat)
     potSites = np.zeros(shape=(numPotSites, 3))
     for i in xrange(len(sdat)):
@@ -665,9 +655,9 @@ def SdatPotSites(sdat):
 
 def BooBoo(baboo):
     """
-        This function returns the bond orientational order for the atoms contained
-        in a 2D array created by reading the "bondAnalysis.boo" file.
-        """
+    This function returns the bond orientational order for the atoms contained
+    in a 2D array created by reading the "bondAnalysis.boo" file.
+    """
     # number of atoms is in the first line.
     numAtoms = int(baboo[0][0])
     boo = np.zeros(shape=(numAtoms))
@@ -682,9 +672,9 @@ def BooBoo(baboo):
 
 def BlNumAtoms(babl):
     """
-        This function returns the number of atoms in a system, extracted from a 2D
-        array created from reading the bondanalysis.bl file.
-        """
+    This function returns the number of atoms in a system, extracted from a 2D
+    array created from reading the bondanalysis.bl file.
+    """
     i = 1
     for j in range(len(babl)):
         if babl[-(i)][1] == "Num_bonds:":
@@ -695,10 +685,10 @@ def BlNumAtoms(babl):
 
 def BlNumBonds(babl):
     """
-        This function returns the number of bonds per atom contained in a 2D array
-        created by reading the bondAnalysis.bl file. If this array is not passed,
-        it is contructed here.
-        """
+    This function returns the number of bonds per atom contained in a 2D array
+    created by reading the bondAnalysis.bl file. If this array is not passed,
+    it is contructed here.
+    """
     numAtoms = BlNumAtoms(babl)
     numBonds = np.zeros(shape=(numAtoms), dtype = int)
     atom = 0
@@ -710,15 +700,15 @@ def BlNumBonds(babl):
 
 def BlBondingArray(babl):
     """
-        This function returns a list, containg the atoms to which a certain atom is
-        bonded. This information is contained a 2D array passed to this function,
-        which is created by reading the bondAnalysis.bl file.
-        
-        IMPORTANT NOTE: This currently works with only > 4 bonds per atom, OR the new
-        bondAnalysis script that Naseer will work on. the new bondAnalysis script will
-        output all the bonds in the same single line, instead of the current method of
-        4 bonds per line.
-        """
+    This function returns a list, containg the atoms to which a certain atom is
+    bonded. This information is contained a 2D array passed to this function,
+    which is created by reading the bondAnalysis.bl file.
+
+    IMPORTANT NOTE: This currently works with only > 4 bonds per atom, OR the
+    new bondAnalysis script that Naseer will work on. the new bondAnalysis
+    script will output all the bonds in the same single line, instead of the
+    current method of 4 bonds per line.
+    """
     numBondsList = BlNumBonds(babl)
     numAtoms     = BlNumAtoms(babl)
     i = 1
@@ -737,10 +727,10 @@ def BlBondingArray(babl):
 
 def BlBondLengths(babl):
     """
-        This function returns a list, containg magnitude of the bonds of an atom.
-        This list is created from a passed array contructed from reading the
-        bondAnalysis.bl file. If the array is not passed, it is contructed here.
-        """
+    This function returns a list, containg magnitude of the bonds of an atom.
+    This list is created from a passed array contructed from reading the
+    bondAnalysis.bl file. If the array is not passed, it is contructed here.
+    """
     numBondsList = BlNumBonds(babl)
     numAtoms     = BlNumAtoms(babl)
     i = 1
@@ -763,9 +753,9 @@ def BlBondLengths(babl):
 
 def BaNumAtoms(baba):
     """
-        This function returns the number of atoms from a 2D array created from reading
-        the bondAnalysis.ba file.
-        """
+    This function returns the number of atoms from a 2D array created from reading
+    the bondAnalysis.ba file.
+    """
     numAtoms = 0
     for line in range(len(baba)):
         if baba[line][0] == 'Num':
@@ -774,9 +764,9 @@ def BaNumAtoms(baba):
 
 def BaNumAngles(baba):
     """
-        This function returns the number of bond angles for an atom, extracted from
-        a 2D array which is created from reading the bondAnalysis.ba file.
-        """
+    This function returns the number of bond angles for an atom, extracted from
+    a 2D array which is created from reading the bondAnalysis.ba file.
+    """
     numAtoms = BaNumAtoms(baba)
     bondAngles = np.zeros(shape=(numAtoms), dtype = int)
     atom = 0
@@ -788,10 +778,10 @@ def BaNumAngles(baba):
 
 def BaBondAngleList(baba):
     """
-        This function returns the angles (in degrees) for an atom. This angle
-        is the angle made between two bonds of the atom in question. For exmple,
-        the bond angle for O in H2O is ~ 104.5 degrees.
-        """
+    This function returns the angles (in degrees) for an atom. This angle
+    is the angle made between two bonds of the atom in question. For exmple,
+    the bond angle for O in H2O is ~ 104.5 degrees.
+    """
     numAtoms = BaNumAtoms(baba)
     bondAngleList = np.zeros(shape=(numAtoms), dtype = object)
     nAngles = BaNumAngles(baba)

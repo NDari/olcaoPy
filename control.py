@@ -1,6 +1,5 @@
 import numpy as np
-import olcaoPy.constants as co
-import olcaoPy.fileOps as fo
+import constants as co
 import sys
 import os
 import re
@@ -10,9 +9,10 @@ import random
 import collections
 import json
 
+
 class Structure(object):
 
-    def __init__(self, fileName = None, buf = 10.0):
+    def __init__(self, fileName=None, buf=10.0):
         """
         This object takes a file with the handle "fileName", reads it, and
         breaks it up into useful information and stores them into an object.
@@ -53,7 +53,7 @@ class Structure(object):
 
 
         """
-        if fileName != None:
+        if fileName is not None:
             # get the extention.
             extention = os.path.splitext(fileName)[1]
             # load information from file based on the extention, or throw
@@ -61,115 +61,182 @@ class Structure(object):
 
             if extention == ".skl":
                 # read the file into a 2D array of strings.
-                skl = fo.readFile(fileName)
+                skl = []
+                with open(fileName, 'r') as f:
+                    lines = [line.strip() for line in f.readlines()]
+                    for line in lines:
+                        skl.append(re.split('\s+', line))
 
                 # get the information out of it.
-                self.title     = fo.SklTitle(skl)
-                self.cellInfo  = fo.SklCellInfo(skl)
-                self.coordType = fo.SklCoordType(skl)
-                self.numAtoms  = fo.SklNumAtoms(skl)
-                self.atomCoors = fo.SklCoors(skl)
-                self.atomNames = fo.SklAtomNames(skl)
-                self.spaceGrp  = fo.SklSpaceGrp(skl)
-                self.supercell = fo.SklSupercell(skl)
-                self.cellType  = fo.SklCellType(skl)
+                line = 1  # skip 0th line with "title"
+                self.title = ''
+                while skl[line][0] != 'end':
+                    self.title += " ".join(skl[line])
+                    self.title += "\n"
+                    line += 1
+                self.title = self.title.rstrip('\n')
+                line += 2  # skip the line with "end" and "cell"
+                self.cellInfo = [float(x) for x in skl[line]]
+                line += 1
+                if 'frac' in skl[line][0]:
+                    self.coordType = 'F'
+                elif 'cart' in skl[line][0]:
+                    self.coordType = 'C'
+                else:
+                    sys.exit("Unknow coordinate type: " + skl[line][0])
+                self.numAtoms = int(skl[line][1])
+                line += 1
+                self.atomCoors = np.zeros((self.numAtoms, 3))
+                self.atomNames = np.chararray((self.numAtoms), itemsize=2)
+                for i in range(self.numAtoms):
+                    self.atomNames[i] = skl[line+i][0].lower()
+                    self.atomCoors[i] = skl[line+i][1:4]
+                line += self.numAtoms
+                self.spaceGrp = skl[-3][1]  # space group is 3rd from bottom.
+                line += 1
+                self.supercell = np.zeros(shape=(3), dtype=int)
+                self.supercell[0:3] = skl[-2][1:4]
+                self.supercellMirror = np.zeros(shape=(3), dtype=int)
+                self.supercellMirror = skl[-2][4:7]
+                if skl[-1][0] == "full":
+                    self.cellType = "F"
+                elif skl[-1][0] == "prim":
+                    self.cellType = "P"
+                else:
+                    sys.exit("Uknown cell type: " + skl[-1][0])
 
                 # calculate the real lattice matrix and its inverse
-                self.rlm = self.makeRealLattice()
-                self.mlr = self.makeRealLatticeInv()
-            elif extention == ".xyz":
-                # read the file into a 2D string array.
-                xyz = fo.readFile(fileName)
-
-                # get the information.
-                self.title = fo.XyzComment(xyz)
-                self.coordType = "C" # always cartesian in an xyz file
-                self.numAtoms = fo.XyzNumAtoms(xyz)
-                self.atomCoors = fo.XyzCoors(xyz)
-                self.atomNames = fo.XyzAtomNames(xyz)
-                self.spaceGrp = "1_a" # no symmetry info in xyz files.
-                self.supercell = [1, 1, 1] # no super cell.
-                self.cellType = "F" # always "full" type in xyz files.
-
-                self.cellInfo = self.computeCellInfo(buf)
-                self.rlm = self.makeRealLattice()
-                self.mlr = self.makeRealLatticeInv()
-                self.shiftXyzCenter(buf)
-            elif extention == ".dat":
-                sdat = fo.readFile(fileName)
-                self.title = "Generic structure.dat title"
-                self.coordType = "C"
-                self.numAtoms = fo.SdatNumAtomSites(sdat)
-                self.atomCoors = fo.SdatAtomSites(sdat)
-                self.atomNames = fo.SdatAtomNames(sdat)
-                self.spaceGrp = "1_a"
-                self.supercell = np.ones(3)
-                self.cellType = "F"
-                # the next 3 fields get reset when we call the "toSI" method,
-                # but ill take the small performance hit for transparancy's
-                # sake.
-                self.rlm = fo.SdatCellVecs(sdat)
-                self.mlr = np.linalg.inv(self.rlm)
-                self.cellInfo = self.getCellInfoFromRlm()
-                self.toSI()
+                self.rlm = Structure.makeRealLattice(self.cellInfo)
+                self.mlr = Structure.makeRealLatticeInv(self.cellInfo)
+            # elif extention == ".xyz":
+            #     # read the file into a 2D string array.
+            #     xyz = fo.readFile(fileName)
+            #
+            #     # get the information.
+            #     self.title = fo.XyzComment(xyz)
+            #     self.coordType = "C"  # always cartesian in an xyz file
+            #     self.numAtoms = fo.XyzNumAtoms(xyz)
+            #     self.atomCoors = fo.XyzCoors(xyz)
+            #     self.atomNames = fo.XyzAtomNames(xyz)
+            #     self.spaceGrp = "1_a"  # no symmetry info in xyz files.
+            #     self.supercell = [1, 1, 1]  # no super cell.
+            #     self.cellType = "F"  # always "full" type in xyz files.
+            #
+            #     self.cellInfo = self.computeCellInfo(buf)
+            #     self.rlm = self.makeRealLattice()
+            #     self.mlr = self.makeRealLatticeInv()
+            #     self.shiftXyzCenter(buf)
+            # elif extention == ".dat":
+            #     sdat = fo.readFile(fileName)
+            #     self.title = "Generic structure.dat title"
+            #     self.coordType = "C"
+            #     self.numAtoms = fo.SdatNumAtomSites(sdat)
+            #     self.atomCoors = fo.SdatAtomSites(sdat)
+            #     self.atomNames = fo.SdatAtomNames(sdat)
+            #     self.spaceGrp = "1_a"
+            #     self.supercell = np.ones(3)
+            #     self.cellType = "F"
+            #     # the next 3 fields get reset when we call the "toSI" method,
+            #     # but ill take the small performance hit for transparancy's
+            #     # sake.
+            #     self.rlm = fo.SdatCellVecs(sdat)
+            #     self.mlr = np.linalg.inv(self.rlm)
+            #     self.cellInfo = self.getCellInfoFromRlm()
+            #     self.toSI()
             else:
                 sys.exit("Unknown file extention: " + str(extention))
-        else:
-            self.title     = None
-            self.cellInfo  = None
+        else:  # fileName is None
+            self.title = None
+            self.cellInfo = None
             self.coordType = None
-            self.numAtoms  = None
+            self.numAtoms = None
             self.atomCoors = None
             self.atomNames = None
-            self.spaceGrp  = None
+            self.spaceGrp = None
             self.superCell = None
-            self.cellType  = None
-            self.rlm       = None
-            self.mlr       = None
+            self.cellType = None
+            self.rlm = None
+            self.mlr = None
 
-    def makeRealLattice(self):
+    @staticmethod
+    def makeRealLattice(cellInfo):
         """
         This function creats the real lattice matrix from the magnitudes of the
         a, b, and c vectors contained in a typical olcao.skl file.
         """
         # lets redefine the passed parameters using the physical names. This is
         # wasteful, but makes the code more readable.
-        a = self.cellInfo[0]
-        b = self.cellInfo[1]
-        c = self.cellInfo[2]
+        a = cellInfo[0]
+        b = cellInfo[1]
+        c = cellInfo[2]
         # Convert the angles to radians.
-        alpha = math.radians(self.cellInfo[3])
-        beta  = math.radians(self.cellInfo[4])
-        gamma = math.radians(self.cellInfo[5])
+        alf = math.radians(cellInfo[3])
+        bet = math.radians(cellInfo[4])
+        gam = math.radians(cellInfo[5])
         # Start the construction of the RLM, the real lattice array.
-        rlm = np.zeros(shape=(3,3), dtype=float)
+        rlm = np.zeros(shape=(3, 3), dtype=float)
         # Assume that a and x are coaxial.
-        rlm[0][0] = a
-        rlm[0][1] = 0.0
-        rlm[0][2] = 0.0
+        rlm[0:3] = [a, 0.0, 0.0]
         # b is then in the xy-plane.
-        rlm[1][0] = (b * math.cos(gamma))
-        rlm[1][1] = (b * math.sin(gamma))
+        rlm[1][0] = (b * math.cos(gam))
+        rlm[1][1] = (b * math.sin(gam))
         rlm[1][2] = 0.0
         # c is a mix of x,y, and z directions.
-        rlm[2][0] = (c * math.cos(beta))
-        rlm[2][1] = (c * (math.cos(alpha) - math.cos(gamma)*math.cos(beta)) /
-                math.sin(gamma))
-        rlm[2][2] = (c * math.sqrt(1.0 - math.cos(beta)**2 -
-                ((rlm[2][1]/c)**2)))
+        rlm[2][0] = (c * math.cos(bet))
+        rlm[2][1] = (c * (math.cos(alf) - math.cos(gam)*math.cos(bet)) /
+                     math.sin(gam))
+        rlm[2][2] = (c * math.sqrt(1.0 - math.cos(bet)**2 -
+                     ((rlm[2][1]/c)**2)))
         # now lets correct for numerical errors.
         rlm[rlm < 0.000000001] = 0.0
         return rlm
 
-    def makeRealLatticeInv(self):
+    @staticmethod
+    def makeRealLatticeInv(cellInfo):
         """
-        This function inverts the real lattice matrix, which is created from the
-        magnitude of the cell vectors and the angles of a structure.
+        This function inverts the real lattice matrix, which is created from
+        the magnitude of the cell vectors and the angles of a structure.
         """
-        invRlm = np.linalg.inv(self.rlm)
-        return invRlm
+        # lets redefine the passed parameters using the physical names. This is
+        # wasteful, but makes the code more readable.
+        a = cellInfo[0]
+        b = cellInfo[1]
+        c = cellInfo[2]
+        # Convert the angles to radians.
+        alf = math.radians(cellInfo[3])
+        bet = math.radians(cellInfo[4])
+        gam = math.radians(cellInfo[5])
+        # Start the construction of the RLM, the real lattice array.
+        mlr = np.zeros(shape=(3, 3), dtype=float)
+        v = math.sqrt(1.0 - (math.cos(alf) * math.cos(alf)) -
+                            (math.cos(bet) * math.cos(bet)) -
+                            (math.cos(gam) * math.cos(gam)) +
+                            (2.0 * math.cos(alf) *
+                                math.cos(bet) *
+                                math.cos(gam)))
 
-    def computeCellInfo(self, buf = 10.0):
+        # assume a and x are colinear.
+        mlr[0][0] = 1.0 / a
+        mlr[0][1] = 0.0
+        mlr[0][2] = 0.0
+
+        # then b is in the xy-plane.
+        mlr[1][0] = -math.cos(gam) / (a * math.sin(gam))
+        mlr[1][1] = 1.0 / (b * math.sin(gam))
+        mlr[1][2] = 0.0
+
+        # c is then a mix of all three axes.
+        mlr[2][0] = ((math.cos(alf) * math.cos(gam) - math.cos(bet)) /
+                     (a * v * math.sin(gam)))
+        mlr[2][1] = ((math.cos(bet)*math.cos(gam) - math.cos(alf)) /
+                     (b * v * math.sin(gam)))
+        mlr[2][2] = (math.sin(gam)) / (c * v)
+
+        # now lets correct for numerical errors.
+        mlr[mlr < 0.000000001] = 0.0
+        return mlr
+
+    def computeCellInfo(self, buf=10.0):
         '''
         This function computs the a, b, and c lattice vectors for a set
         of coordinates passed to it. It is assumed that the system is in
@@ -179,18 +246,18 @@ class Structure(object):
         '''
         cellInfo = np.zeros(6)
         cellInfo[0] = (self.atomCoors.max(axis=0)[0] -
-                self.atomCoors.min(axis=0)[0] + buf)
+                       self.atomCoors.min(axis=0)[0] + buf)
         cellInfo[1] = (self.atomCoors.max(axis=0)[1] -
-                self.atomCoors.min(axis=0)[1] + buf)
+                       self.atomCoors.min(axis=0)[1] + buf)
         cellInfo[2] = (self.atomCoors.max(axis=0)[2] -
-                self.atomCoors.min(axis=0)[2] + buf)
+                       self.atomCoors.min(axis=0)[2] + buf)
         cellInfo[3] = 90.0
         cellInfo[4] = 90.0
         cellInfo[5] = 90.0
         return cellInfo
 
-    def shiftXyzCenter(self, buf = 10.0):
-        '''
+    def shiftXyzCenter(self, buf=10.0):
+        """
         This function will linearly transelate all the atom along the
         orthogonal axes, to make sure that the system as a whole is
         centered in the simulation box. The atoms in the system will
@@ -198,7 +265,7 @@ class Structure(object):
         therefore this is only applicable to molecular systems or
         clusters. Do not use this subroutine directly unless you know what
         you are doing.
-        '''
+        """
         self.toCart()
         for i in self.atomCoors:
             i[:] += (buf/2.0)
@@ -224,7 +291,7 @@ class Structure(object):
         clone.mlr = np.copy(self.mlr)
         return clone
 
-    def writeSkl(self, fileName   = "olcao.skl"):
+    def writeSkl(self, fileName="olcao.skl"):
         """
         This method will write a structure to a olcao.skl file. the
         default file name is "olcao.skl" if it is not passed. This method
@@ -235,7 +302,7 @@ class Structure(object):
             sys.exit("File " + fileName + " already exists!")
 
         # concatenate the infomation into a string for printing.
-        string  = "title\n"
+        string = "title\n"
         string += self.title
         string += "\nend\ncell\n"
         string += (" ".join(str(x) for x in self.cellInfo))
@@ -270,7 +337,7 @@ class Structure(object):
 
         return self
 
-    def writeXyz(self, comment = None, fileName = "out.xyz" ):
+    def writeXyz(self, comment=None, fileName="out.xyz"):
         """
         This function writes the structure in an xyz format. This format
         starts with the number of atoms, followed by a comment, and then
@@ -284,7 +351,7 @@ class Structure(object):
         if os.path.isfile(fileName):
             sys.exit("File " + fileName + " already exists!")
 
-        if comment == None:
+        if comment is None:
             comment = "Auto-generated comment"
         self.toCart()
         string = ""
@@ -292,7 +359,7 @@ class Structure(object):
         string += "\n"
         string += comment
         elementalNames = self.elementNames()
-        for i in xrange(self.numAtoms):
+        for i in range(self.numAtoms):
             string += "\n"
             string += (elementalNames[i][:1].upper() + elementalNames[i][1:])
             string += " "
@@ -313,7 +380,7 @@ class Structure(object):
         move.
         '''
         self.toCart()
-        for i in xrange(self.numAtoms):
+        for i in range(self.numAtoms):
             if random.random() < prob:
                 theta = random.random() * math.pi
                 phi = random.random() * 2.0 * math.pi
@@ -328,11 +395,11 @@ class Structure(object):
     def elementList(self):
         """
         This subroutine returns a list of unique elements in a
-        given structure. by "element", we mean the elements on the
+        given structure. By "element", we mean the elements on the
         priodic table, such as "H", "Li", "Ag", etc.
         """
         elementList = []
-        for atom in xrange(self.numAtoms):
+        for atom in range(self.numAtoms):
             # the atom name may contain numbers indicating the type or
             # species of the elements such as "y4" or "ca3_1". so we will
             # split the name based on the numbers, taking only the first
@@ -356,7 +423,7 @@ class Structure(object):
         differently by designating them as si1 and si2.
         """
         speciesList = []
-        for atom in xrange(self.numAtoms):
+        for atom in range(self.numAtoms):
             if self.atomNames[atom] not in speciesList:
                 speciesList.append(self.atomNames[atom])
         return speciesList
@@ -368,7 +435,7 @@ class Structure(object):
         atom without any added digits or other marks.
         """
         atomElementList = []
-        for atom in xrange(self.numAtoms):
+        for atom in range(self.numAtoms):
             name = re.split(r'(\d+)', self.atomNames[atom])[0]
             atomElementList.append(name)
         return atomElementList
@@ -379,8 +446,8 @@ class Structure(object):
         system.
         """
         atomElementNames = self.elementNames()
-        atomZNums        = []
-        for atom in xrange(self.numAtoms):
+        atomZNums = []
+        for atom in range(self.numAtoms):
             atomZNums.append(co.atomicZ[atomElementNames[atom]])
         return atomZNums
 
@@ -392,11 +459,7 @@ class Structure(object):
         """
         if self.coordType == 'F':
             return
-        for i in self.atomCoors:
-            (i[0], i[1], i[2])=(sum(i[:] * self.mlr[:][0]),
-                                sum(i[:] * self.mlr[:][1]),
-                                sum(i[:] * self.mlr[:][2]))
-
+        self.atomCoors = self.atomCoors.dot(self.mlr)
         self.coordType = 'F'
         return self
 
@@ -408,11 +471,7 @@ class Structure(object):
         """
         if self.coordType == 'C':
             return
-        for i in self.atomCoors:
-            (i[0], i[1], i[2])=(sum(i[:] * self.rlm[:][0]),
-                                sum(i[:] * self.rlm[:][1]),
-                                sum(i[:] * self.rlm[:][2]))
-
+        self.atomCoors = self.atomCoors.dot(self.rlm)
         self.coordType = 'C'
         return self
 
@@ -421,8 +480,8 @@ class Structure(object):
         This function creates the min. distance matrix between all the points
         in the system that is passed to this function.
         The min. distance here is the distance between two points when the
-        periodic boundary conditions (PBCs) are taken into account. For example,
-        consider the (silly) 1D system:
+        periodic boundary conditions (PBCs) are taken into account. For
+        example, consider the (silly) 1D system:
 
             [ABCDEFG]
 
@@ -439,29 +498,29 @@ class Structure(object):
 
         atom = np.zeros(3)
         self.toCart()
-        for a in xrange(self.numAtoms):
-            for x in xrange(-1, 2):
-                for y in xrange(-1, 2):
-                    for z in xrange(-1, 2):
+        for a in range(self.numAtoms):
+            for x in range(-1, 2):
+                for y in range(-1, 2):
+                    for z in range(-1, 2):
                         atom = np.copy(self.atomCoors[a])
                         # convert the copy to fractional, move it, and convert
                         # back to cartesian. then calculate distance from all
                         # other atoms in the system.
-                        (atom[0],atom[1],atom[2])=(sum(atom[:]*self.mlr[:][0]),
-                                                   sum(atom[:]*self.mlr[:][1]),
-                                                   sum(atom[:]*self.mlr[:][2]))
+                        atom[:] = [sum(atom[:]*self.mlr[:][0]),
+                                   sum(atom[:]*self.mlr[:][1]),
+                                   sum(atom[:]*self.mlr[:][2])]
                         atom[:] += [float(x), float(y), float(z)]
-                        (atom[0],atom[1],atom[2])=(sum(atom[:]*self.rlm[:][0]),
-                                                   sum(atom[:]*self.rlm[:][1]),
-                                                   sum(atom[:]*self.rlm[:][2]))
-                        for b in xrange(a+1, self.numAtoms):
-                            dist = math.sqrt(sum((atom-self.atomCoors[b])*
+                        atom[:] = [sum(atom[:]*self.rlm[:][0]),
+                                   sum(atom[:]*self.rlm[:][1]),
+                                   sum(atom[:]*self.rlm[:][2])]
+                        for b in range(a+1, self.numAtoms):
+                            dist = math.sqrt(sum((atom-self.atomCoors[b]) *
                                                  (atom-self.atomCoors[b])))
                             if dist < mdm[a][b]:
                                 mdm[a][b] = dist
                                 mdm[b][a] = dist
 
-        for i in xrange(self.numAtoms):
+        for i in range(self.numAtoms):
             mdm[i][i] = 0.0
 
         return mdm
@@ -471,8 +530,8 @@ class Structure(object):
         This function creates the min. distance matrix between all the points
         in the system that is passed to this function.
         The min. distance here is the distance between two points when the
-        periodic boundary conditions (PBCs) are taken into account. For example,
-        consider the (silly) 1D system:
+        periodic boundary conditions (PBCs) are taken into account. For
+        example, consider the (silly) 1D system:
 
             [ABCDEFG]
 
@@ -502,15 +561,15 @@ class Structure(object):
                         # convert the copy to fractional, move it, and convert
                         # back to cartesian. then calculate distance from all
                         # other atoms in the system.
-                        (atom[0],atom[1],atom[2])=(sum(atom[:]*self.mlr[:][0]),
-                                                   sum(atom[:]*self.mlr[:][1]),
-                                                   sum(atom[:]*self.mlr[:][2]))
+                        atom[0:3] = [sum(atom[:]*self.mlr[:][0]),
+                                     sum(atom[:]*self.mlr[:][1]),
+                                     sum(atom[:]*self.mlr[:][2])]
                         atom[:] += [float(x), float(y), float(z)]
-                        (atom[0],atom[1],atom[2])=(sum(atom[:]*self.rlm[:][0]),
-                                                   sum(atom[:]*self.rlm[:][1]),
-                                                   sum(atom[:]*self.rlm[:][2]))
-                        for b in xrange(a+1, self.numAtoms):
-                            dist = math.sqrt(sum((atom-self.atomCoors[b])*
+                        atom[0:3] = [sum(atom[:]*self.rlm[:][0]),
+                                     sum(atom[:]*self.rlm[:][1]),
+                                     sum(atom[:]*self.rlm[:][2])]
+                        for b in range(a+1, self.numAtoms):
+                            dist = math.sqrt(sum((atom-self.atomCoors[b]) *
                                                  (atom-self.atomCoors[b])))
                             if dist < mdm[a][b]:
                                 mdm[a][b] = dist
@@ -518,7 +577,7 @@ class Structure(object):
 
                                 mdv[a][b][:] = self.atomCoors[b] - atom
                                 mdv[b][a][:] = atom - self.atomCoors[b]
-        for i in xrange(self.numAtoms):
+        for i in range(self.numAtoms):
             mdv[i][i][:] = 0.0
 
         return mdv
@@ -559,7 +618,7 @@ class Structure(object):
             return 0.0
         return (0.5 * (math.cos((math.pi*dist)/cutoffRad) + 1.0))
 
-    def genSymFn1(self, cutoff, mdm = None):
+    def genSymFn1(self, cutoff, mdm=None):
         '''
         This function generates the first symmetry function G1 as defined in:
 
@@ -567,7 +626,7 @@ class Structure(object):
         Neural Network Potentials",
         by Jorg Behler, J. Chem. Phys. 134, 074106 (2011)
         '''
-        if mdm == None:
+        if mdm is None:
             mdm = self.minDistMat()
         symFn1 = np.zeros(self.numAtoms)
         for i in range(self.numAtoms):
@@ -576,7 +635,7 @@ class Structure(object):
 
         return symFn1
 
-    def genSymFn2(self, cutoff, rs, eta, mdm = None):
+    def genSymFn2(self, cutoff, rs, eta, mdm=None):
         '''
         This function generates the second symmetry function G2 as defined in:
 
@@ -584,7 +643,7 @@ class Structure(object):
         Neural Network Potentials",
         by Jorg Behler, J. Chem. Phys. 134, 074106 (2011)
         '''
-        if mdm == None:
+        if mdm is None:
             mdm = self.minDistMat()
         symFn2 = np.zeros(self.numAtoms)
         for i in range(self.numAtoms):
@@ -595,7 +654,7 @@ class Structure(object):
 
         return symFn2
 
-    def genSymFn3(self, cutoff, kappa, mdm = None):
+    def genSymFn3(self, cutoff, kappa, mdm=None):
         '''
         This function generates the third symmetry function G3 as defined in:
 
@@ -603,7 +662,7 @@ class Structure(object):
         Neural Network Potentials",
         by Jorg Behler, J. Chem. Phys. 134, 074106 (2011)
         '''
-        if mdm == None:
+        if mdm is None:
             mdm = self.minDistMat()
         symFn3 = np.zeros(self.numAtoms)
         for i in range(self.numAtoms):
@@ -614,7 +673,7 @@ class Structure(object):
 
         return symFn3
 
-    def genSymFn4(self, cutoff, lamb, zeta, eta, mdm = None, mdv = None):
+    def genSymFn4(self, cutoff, lamb, zeta, eta, mdm=None, mdv=None):
         '''
         This function generates the forth symmetry function G4 as defined in:
 
@@ -622,9 +681,9 @@ class Structure(object):
         Neural Network Potentials",
         by Jorg Behler, J. Chem. Phys. 134, 074106 (2011)
         '''
-        if mdm == None:
+        if mdm is None:
             mdm = self.minDistMat()
-        if mdv == None:
+        if mdv is None:
             mdv = self.minDistVecs()
         symFn4 = np.zeros(self.numAtoms)
 
@@ -656,14 +715,13 @@ class Structure(object):
                     cosTheta_ijk = np.dot(Rij, Rik) / (mdm[i][j] * mdm[i][k])
                     symFn4[i] += (((1.0+lamb*cosTheta_ijk)**zeta) *
                                   (math.exp(-eta*(mdm[i][j]**2 + mdm[i][k]**2 +
-                                      mdm[j][k]**2))) * FcRij * FcRik * FcRjk)
+                                   mdm[j][k]**2))) * FcRij * FcRik * FcRjk)
 
             symFn4[i] *= (2**(1.0 - zeta))
 
         return symFn4
 
-
-    def genSymFn5(self, cutoff, lamb, zeta, eta, mdm = None, mdv = None):
+    def genSymFn5(self, cutoff, lamb, zeta, eta, mdm=None, mdv=None):
         '''
         This function generates the fifth symmetry function G5 as defined in:
 
@@ -671,9 +729,9 @@ class Structure(object):
         Neural Network Potentials",
         by Jorg Behler, J. Chem. Phys. 134, 074106 (2011)
         '''
-        if mdm == None:
+        if mdm is None:
             mdm = self.minDistMat()
-        if mdv == None:
+        if mdv is None:
             mdv = self.minDistVecs()
         symFn5 = np.zeros(self.numAtoms)
 
@@ -702,8 +760,7 @@ class Structure(object):
                     cosTheta_ijk = np.dot(Rij, Rik) / (mdm[i][j] * mdm[i][k])
                     symFn5[i] += (((1.0+lamb*cosTheta_ijk)**zeta) *
                                   (math.exp(-eta*(mdm[i][j]**2 +
-                                             mdm[i][k]**2)))*
-                                  (FcRij * FcRik))
+                                   mdm[i][k]**2))) * (FcRij * FcRik))
 
             symFn5[i] *= (2**(1.0 - zeta))
 
@@ -720,17 +777,17 @@ class Structure(object):
         allSym = np.zeros(shape=(self.numAtoms, 79))
         mdm = self.minDistMat()
         mdv = self.minDistVecs()
-        print "Working on the symmetry function 1 set..."
-        allSym[:, 0]  = self.genSymFn1(1.0, mdm)
-        allSym[:, 1]  = self.genSymFn1(1.2, mdm)
-        allSym[:, 2]  = self.genSymFn1(1.4, mdm)
-        allSym[:, 3]  = self.genSymFn1(1.6, mdm)
-        allSym[:, 4]  = self.genSymFn1(1.8, mdm)
-        allSym[:, 5]  = self.genSymFn1(2.0, mdm)
-        allSym[:, 6]  = self.genSymFn1(2.2, mdm)
-        allSym[:, 7]  = self.genSymFn1(2.4, mdm)
-        allSym[:, 8]  = self.genSymFn1(2.6, mdm)
-        allSym[:, 9]  = self.genSymFn1(2.8, mdm)
+        print("Working on the symmetry function 1 set...")
+        allSym[:, 0] = self.genSymFn1(1.0, mdm)
+        allSym[:, 1] = self.genSymFn1(1.2, mdm)
+        allSym[:, 2] = self.genSymFn1(1.4, mdm)
+        allSym[:, 3] = self.genSymFn1(1.6, mdm)
+        allSym[:, 4] = self.genSymFn1(1.8, mdm)
+        allSym[:, 5] = self.genSymFn1(2.0, mdm)
+        allSym[:, 6] = self.genSymFn1(2.2, mdm)
+        allSym[:, 7] = self.genSymFn1(2.4, mdm)
+        allSym[:, 8] = self.genSymFn1(2.6, mdm)
+        allSym[:, 9] = self.genSymFn1(2.8, mdm)
         allSym[:, 10] = self.genSymFn1(3.0, mdm)
         allSym[:, 11] = self.genSymFn1(3.2, mdm)
         allSym[:, 12] = self.genSymFn1(3.4, mdm)
@@ -748,7 +805,7 @@ class Structure(object):
         allSym[:, 24] = self.genSymFn1(5.8, mdm)
         allSym[:, 25] = self.genSymFn1(6.0, mdm)
 
-        print "Working on the symmetry function 2 set..."
+        print("Working on the symmetry function 2 set...")
         allSym[:, 26] = self.genSymFn2(5.0, 2.0, 12.0, mdm)
         allSym[:, 27] = self.genSymFn2(5.0, 2.2, 12.0, mdm)
         allSym[:, 28] = self.genSymFn2(5.0, 2.4, 12.0, mdm)
@@ -765,7 +822,7 @@ class Structure(object):
         allSym[:, 39] = self.genSymFn2(5.0, 4.6, 12.0, mdm)
         allSym[:, 40] = self.genSymFn2(5.0, 4.8, 12.0, mdm)
 
-        print "Working on the symmetry function 3 set..."
+        print("Working on the symmetry function 3 set...")
         allSym[:, 41] = self.genSymFn3(5.0, 1.0, mdm)
         allSym[:, 42] = self.genSymFn3(5.0, 1.5, mdm)
         allSym[:, 43] = self.genSymFn3(5.0, 2.0, mdm)
@@ -775,7 +832,7 @@ class Structure(object):
         allSym[:, 47] = self.genSymFn3(5.0, 4.0, mdm)
         allSym[:, 48] = self.genSymFn3(5.0, 4.5, mdm)
 
-        print "Working on the symmetry function 4 set..."
+        print("Working on the symmetry function 4 set...")
         allSym[:, 49] = self.genSymFn4(5.0, 1.0, 1.0, 0.05, mdm, mdv)
         allSym[:, 50] = self.genSymFn4(5.0, 1.0, 2.0, 0.05, mdm, mdv)
         allSym[:, 51] = self.genSymFn4(5.0, 1.0, 3.0, 0.05, mdm, mdv)
@@ -792,7 +849,7 @@ class Structure(object):
         allSym[:, 62] = self.genSymFn4(5.0, 1.0, 4.0, 0.09, mdm, mdv)
         allSym[:, 63] = self.genSymFn4(5.0, 1.0, 5.0, 0.09, mdm, mdv)
 
-        print "Working on the symmetry function 5 set..."
+        print("Working on the symmetry function 5 set...")
         allSym[:, 64] = self.genSymFn5(5.0, 1.0, 1.0, 0.3, mdm, mdv)
         allSym[:, 65] = self.genSymFn5(5.0, 1.0, 2.0, 0.3, mdm, mdv)
         allSym[:, 66] = self.genSymFn5(5.0, 1.0, 3.0, 0.3, mdm, mdv)
@@ -822,11 +879,7 @@ class Structure(object):
             covRads[element] = co.covalRad[element]
         return covRads
 
-    def bondingList(self,
-                    mdm = None,
-                    bf = 1.1,
-                    covRads = None,
-                    atomElementList = None):
+    def bondingList(self, mdm=None, bf=1.1, covRads=None, aElementList=None):
         '''
         This function creates a list of dicts. for every atom x, we get a dict
         of atoms to which x is bonded.
@@ -839,33 +892,33 @@ class Structure(object):
         NOTE: The returned list starts at 0. so atom 102 will be returned
         as atom 101, etc.
         '''
-        if mdm == None:
+        if mdm is None:
             mdm = self.minDistMat()
-        if covRads == None:
+        if covRads is None:
             covRads = self.covalentRadii()
-        if atomElementList == None:
-            atomElementList = self.elementNames()
+        if aElementList is None:
+            aElementList = self.elementNames()
 
         bondingList = collections.defaultdict(dict)
-        for atom1 in xrange(self.numAtoms-1):
-            for atom2 in xrange(atom1 + 1, self.numAtoms):
-                bondDist = (covRads[atomElementList[atom1]] +
-                            covRads[atomElementList[atom2]]) * bf
+        for atom1 in range(self.numAtoms-1):
+            for atom2 in range(atom1 + 1, self.numAtoms):
+                bondDist = (covRads[aElementList[atom1]] +
+                            covRads[aElementList[atom2]]) * bf
                 if bondDist >= mdm[atom1][atom2]:
                     bondingList[atom1][atom2] = mdm[atom1][atom2]
                     bondingList[atom2][atom1] = mdm[atom2][atom1]
 
         return bondingList
 
-    def coordination(self, bondingList = None, bf = 1.1):
+    def coordination(self, bondingList=None, bf=1.1):
         '''
         This function returns the coordination of each atom in the structure.
         by coordination of an atom x, we mean the number of atoms to which x is
         bonded.
         '''
-        if bondingList == None:
-            bondingList = self.bondingList(bf = bf)
-        return [len(bondingList[i]) for i in xrange(len(bondingList))]
+        if bondingList is None:
+            bondingList = self.bondingList(bf=bf)
+        return [len(bondingList[i]) for i in range(len(bondingList))]
 
     def toAU(self):
         pass
@@ -887,28 +940,31 @@ class Structure(object):
         six parameters are the cell information.
         '''
         cellInfo = np.zeros(6)
-        for i in xrange(3):
+        for i in range(3):
             cellInfo[i] = math.sqrt(self.rlm[i][0]*self.rlm[i][0] +
                                     self.rlm[i][1]*self.rlm[i][1] +
                                     self.rlm[i][2]*self.rlm[i][2])
 
         # alpha is angle between b and c
-        cellInfo[3] = math.acos(np.dot(self.rlm[1], self.rlm[2])/
-            (np.linalg.norm(self.rlm[1]) * np.linalg.norm(self.rlm[2])))
+        cellInfo[3] = math.acos(np.dot(self.rlm[1], self.rlm[2]) /
+                                (np.linalg.norm(self.rlm[1]) *
+                                 np.linalg.norm(self.rlm[2])))
         cellInfo[3] = math.degrees(cellInfo[3])
 
         # beta is between a and c
-        cellInfo[4] = math.acos(np.dot(self.rlm[0], self.rlm[2])/
-            (np.linalg.norm(self.rlm[0]) * np.linalg.norm(self.rlm[2])))
+        cellInfo[4] = math.acos(np.dot(self.rlm[0], self.rlm[2]) /
+                                (np.linalg.norm(self.rlm[0]) *
+                                 np.linalg.norm(self.rlm[2])))
         cellInfo[4] = math.degrees(cellInfo[4])
 
         # gamma is between a and b
-        cellInfo[5] = math.acos(np.dot(self.rlm[0], self.rlm[1])/
-            (np.linalg.norm(self.rlm[0]) * np.linalg.norm(self.rlm[1])))
+        cellInfo[5] = math.acos(np.dot(self.rlm[0], self.rlm[1]) /
+                                (np.linalg.norm(self.rlm[0]) *
+                                 np.linalg.norm(self.rlm[1])))
         cellInfo[5] = math.degrees(cellInfo[5])
         return cellInfo
 
-    def writeLAMMPS(self, fileName = "data.lmp"):
+    def writeLAMMPS(self, fileName="data.lmp"):
         '''
         This function prints a file, "data.lmp" by default, that can
         be used as input to LAMMPS. this input is used by lammps to
