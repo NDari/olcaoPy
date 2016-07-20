@@ -29,7 +29,7 @@ class Structure(object):
         :num_atoms
                     The total number of atoms in the system.
         :atom_coordinates
-                    The coordiantes of the atoms in the system.
+                    The coordinates of the atoms in the system.
         :atom_names
                     The "names" of the atoms in the system. Note that the
                     name is simply the string representing the name, and
@@ -58,22 +58,22 @@ class Structure(object):
                     the inverse of the real lattice matrix. the name is
                     a silly joke.
 
-        If the file_name is not passed to the contructor, then an empty
+        If the file_name is not passed to the constructor, then an empty
         structure object is made.
 
-        The "buf" parameter is used when the structure is contructed from
+        The "buf" parameter is used when the structure is constructed from
         an ".xyz" object, and it denotes the distance between the outer-most
         atoms from the edges of the box containing the structure.
 
 
         """
         if file_name is not None:
-            # get the extention.
-            extention = os.path.splitext(file_name)[1]
-            # load information from file based on the extention, or throw
-            # an error if the extention isnt unrecognized.
+            # get the extension.
+            extension = os.path.splitext(file_name)[1]
+            # load information from file based on the extension, or throw
+            # an error if the extension is not unrecognized.
 
-            if extention == ".skl":
+            if extension == ".skl":
                 # read the file into a 2D array of strings.
                 skl = []
                 with open(file_name, 'r') as f:
@@ -117,12 +117,12 @@ class Structure(object):
                 elif skl[-1][0] == "prim":
                     self.cell_type = "P"
                 else:
-                    sys.exit("Uknown cell type: " + skl[-1][0])
+                    sys.exit("Unknown cell type: " + skl[-1][0])
 
                 # calculate the real lattice matrix and its inverse
-                self.rlm = Structure.makeRealLattice(self.cell_info)
-                self.mlr = Structure.makeRealLatticeInv(self.cell_info)
-            # elif extention == ".xyz":
+                self.rlm = Structure.make_real_lattice(self.cell_info)
+                self.mlr = Structure.make_real_lattice_inv(self.cell_info)
+            # elif extension == ".xyz":
             #     # read the file into a 2D string array.
             #     xyz = fo.readFile(file_name)
             #
@@ -136,11 +136,11 @@ class Structure(object):
             #     self.supercell = [1, 1, 1]  # no super cell.
             #     self.cell_type = "F"  # always "full" type in xyz files.
             #
-            #     self.cell_info = self.computeCellInfo(buf)
-            #     self.rlm = self.makeRealLattice()
-            #     self.mlr = self.makeRealLatticeInv()
-            #     self.shiftXyzCenter(buf)
-            # elif extention == ".dat":
+            #     self.cell_info = self.compute_cell_info(buf)
+            #     self.rlm = self.make_real_lattice()
+            #     self.mlr = self.make_real_lattice_inv()
+            #     self.shift_xyz_center(buf)
+            # elif extension == ".dat":
             #     sdat = fo.readFile(file_name)
             #     self.title = "Generic structure.dat title"
             #     self.coordinate_type = "C"
@@ -155,10 +155,10 @@ class Structure(object):
             #     # sake.
             #     self.rlm = fo.SdatCellVecs(sdat)
             #     self.mlr = np.linalg.inv(self.rlm)
-            #     self.cell_info = self.getCellInfoFromRlm()
+            #     self.cell_info = self.cell_info_from_rlm()
             #     self.toSI()
             else:
-                sys.exit("Unknown file extention: " + str(extention))
+                sys.exit("Unknown file extension: " + str(extension))
         else:  # file_name is None
             self.title = None
             self.cell_info = None
@@ -173,7 +173,7 @@ class Structure(object):
             self.mlr = None
 
     @staticmethod
-    def makeRealLattice(cell_info):
+    def make_real_lattice(cell_info):
         """
         This function creats the real lattice matrix from the magnitudes of the
         a, b, and c vectors contained in a typical olcao.skl file.
@@ -206,7 +206,7 @@ class Structure(object):
         return rlm
 
     @staticmethod
-    def makeRealLatticeInv(cell_info):
+    def make_real_lattice_inv(cell_info):
         """
         This function inverts the real lattice matrix, which is created from
         the magnitude of the cell vectors and the angles of a structure.
@@ -250,7 +250,7 @@ class Structure(object):
         mlr[mlr < 0.000000001] = 0.0
         return mlr
 
-    def toFrac(self):
+    def to_frac(self):
         """
         Modifies the structure, by converting its atomic coordinates to
         fractional. If the coordinates are already fractional, nothing
@@ -262,7 +262,7 @@ class Structure(object):
         self.coordinate_type = 'F'
         return self
 
-    def toCart(self):
+    def to_cart(self):
         """
         Modifies the structure, by converting its atomic coordinates to
         cartesian. If the coordinates are already cartesian, nothing
@@ -274,7 +274,7 @@ class Structure(object):
         self.coordinate_type = 'C'
         return self
 
-    def computeCellInfo(self, buf=10.0):
+    def compute_cell_info(self, buf=10.0):
         '''
         This function computs the a, b, and c lattice vectors for a set
         of coordinates passed to it. It is assumed that the system is in
@@ -294,7 +294,7 @@ class Structure(object):
         cell_info[5] = 90.0
         return cell_info
 
-    def shiftXyzCenter(self, buf=10.0):
+    def shift_xyz_center(self, buf=10.0):
         """
         This function will linearly transelate all the atom along the
         orthogonal axes, to make sure that the system as a whole is
@@ -305,9 +305,9 @@ class Structure(object):
         you are doing.
         """
         if self.coordinate_type == "F":
-            self.toCart()
+            self.to_cart()
             self.atom_coordinates += (buf/2.0)
-            self.toFrac()
+            self.to_frac()
         else:
             self.atom_coordinates += (buf/2.0)
         return self
@@ -332,7 +332,7 @@ class Structure(object):
         clone.mlr = np.copy(self.mlr)
         return clone
 
-    def writeSkl(self, file_name="olcao.skl"):
+    def write_skl(self, file_name="olcao.skl"):
         """
         This method will write a structure to a olcao.skl file. the
         default file name is "olcao.skl" if it is not passed. This method
@@ -378,14 +378,14 @@ class Structure(object):
 
         return self
 
-    def writeXyz(self, comment=None, file_name="out.xyz"):
+    def write_xyz(self, comment=None, file_name="out.xyz"):
         """
         This function writes the structure in an xyz format. This format
         starts with the number of atoms, followed by a comment, and then
         num_atoms lines containing the element name and the cartesian
         coordinates for each atom.
 
-        this function has to optional parameters, the comment (without
+        This function has to optional parameters, the comment (without
         the new line), and the file name to which we write.
         """
         # make sure we are not overwriting a file that already exists.
@@ -394,12 +394,12 @@ class Structure(object):
 
         if comment is None:
             comment = "Auto-generated comment"
-        self.toCart()
+        self.to_cart()
         string = ""
         string += str(self.num_atoms)
         string += "\n"
         string += comment
-        elementalNames = self.elementNames()
+        elementalNames = self.element_names()
         for i in range(self.num_atoms):
             string += "\n"
             string += (elementalNames[i][:1].upper() + elementalNames[i][1:])
@@ -420,7 +420,7 @@ class Structure(object):
         atom will not move, and 1.0 means a %100 chance that a given atom will
         move.
         '''
-        self.toCart()
+        self.to_cart()
         for i in range(self.num_atoms):
             if random.random() < prob:
                 theta = random.random() * math.pi
@@ -429,28 +429,28 @@ class Structure(object):
                 y = mag * math.sin(theta) * math.sin(phi)
                 z = mag * math.cos(theta)
                 self.atom_coordinates[i] += [x, y, z]
-        self.applyPBC()
+        self.apply_pbc()
         self.space_group = "1_a"
         return self
 
-    def elementList(self):
+    def element_list(self):
         """
         This subroutine returns a list of unique elements in a
         given structure. By "element", we mean the elements on the
         priodic table, such as "H", "Li", "Ag", etc.
         """
-        elementList = []
+        element_list = []
         for atom in range(self.num_atoms):
             # the atom name may contain numbers indicating the type or
             # species of the elements such as "y4" or "ca3_1". so we will
             # split the name based on the numbers, taking only the first
             # part which contains the elemental name.
             name = re.split(r'(\d+)', self.atom_names[atom])[0]
-            if name not in elementList:
-                elementList.append(name)
-        return elementList
+            if name not in element_list:
+                element_list.append(name)
+        return element_list
 
-    def speciesList(self):
+    def species_list(self):
         """
         This subroutine return a list of unique species in a
         given structure. by 'species', we mean the following: in a
@@ -463,13 +463,13 @@ class Structure(object):
         very different environments. therefore, we can treat them
         differently by designating them as si1 and si2.
         """
-        speciesList = []
+        species_list = []
         for atom in range(self.num_atoms):
-            if self.atom_names[atom] not in speciesList:
-                speciesList.append(self.atom_names[atom])
-        return speciesList
+            if self.atom_names[atom] not in species_list:
+                species_list.append(self.atom_names[atom])
+        return species_list
 
-    def elementNames(self):
+    def element_names(self):
         """
         This subroutine returns the atom element names of the atoms in the
         system. the atom element name is the name of the element of the
@@ -481,19 +481,19 @@ class Structure(object):
             atomElementList.append(name)
         return atomElementList
 
-    def atomZNums(self):
+    def atom_z_num(self):
         """
         This subroutine returns the Z number of the atoms in the
         system.
         """
-        atomElementNames = self.elementNames()
-        atomZNums = []
+        atomElementNames = self.element_names()
+        atom_z_num = []
         for atom in range(self.num_atoms):
-            atomZNums.append(co.atomicZ[atomElementNames[atom]])
-        return atomZNums
+            atom_z_num.append(co.atomicZ[atomElementNames[atom]])
+        return atom_z_num
 
 
-    def minDistMat(self):
+    def min_dist_matrix(self):
         """
         This function creates the min. distance matrix between all the points
         in the system that is passed to this function.
@@ -517,7 +517,7 @@ class Structure(object):
         atom = np.zeros(3)
         converted_to_cart = False
         if self.coordinate_type == "F":
-            self.toCart()
+            self.to_cart()
             converted_to_cart = True
         for a in range(self.num_atoms):
             for x, y, z in itertools.product([-1, 0, 1], repeat=3):
@@ -539,10 +539,10 @@ class Structure(object):
             mdm[i][i] = 0.0
 
         if converted_to_cart:
-            self.toFrac()
+            self.to_frac()
         return mdm
 
-    def minDistVecs(self, mdm=None):
+    def min_dist_vector(self, mdm=None):
         '''
         This function creates the min. distance matrix between all the points
         in the system that is passed to this function.
@@ -565,12 +565,13 @@ class Structure(object):
         version of all other atoms, when PBCs are considered.
         '''
         if mdm is None:
-            mdm = self.minDistMat()
+            mdm = self.min_dist_matrix()
+        mdv = np.zeros(shape=(self.num_atoms, self.num_atoms, 3))
 
         atom = np.zeros(3)
         converted_to_cart = False
         if self.coordinate_type == "F":
-            self.toCart()
+            self.to_cart()
             converted_to_cart = True
         for a in range(self.num_atoms):
             for x, y, z in itertools.product([-1, 0, 1], repeat=3):
@@ -594,17 +595,17 @@ class Structure(object):
             mdv[i][i] = 0.0
 
         if converted_to_cart:
-            self.toFrac()
+            self.to_frac()
         return mdv
 
-    def applyPBC(self):
+    def apply_pbc(self):
         '''
         This function ensures that all atoms are within a box that is defined
         by the a, b, and c lattice vectors. In other words, this function
         ensures that all atoms in the system are placed between 0 and 1 in
         fractional coordinates.
         '''
-        self.toFrac()
+        self.to_frac()
         for a in range(self.num_atoms):
             while self.atom_coordinates[a][0] > 1.0:
                 self.atom_coordinates[a][0] -= 1.0
@@ -621,9 +622,9 @@ class Structure(object):
 
         return self
 
-    def coFn(self, dist, cutoffRad):
+    def cutoff_function(self, dist, cutoffRad):
         '''
-        coFn returns the value of the cutoff function as defined in:
+        cutoff_function returns the value of the cutoff function as defined in:
 
         "Atom Centered Symmetry Fucntions for Contructing High-Dimentional
         Neural Network Potentials",
@@ -633,7 +634,7 @@ class Structure(object):
             return 0.0
         return (0.5 * (math.cos((math.pi*dist)/cutoffRad) + 1.0))
 
-    def genSymFn1(self, cutoff, mdm=None):
+    def symmetry_function_1(self, cutoff, mdm=None):
         '''
         This function generates the first symmetry function G1 as defined in:
 
@@ -642,15 +643,15 @@ class Structure(object):
         by Jorg Behler, J. Chem. Phys. 134, 074106 (2011)
         '''
         if mdm is None:
-            mdm = self.minDistMat()
+            mdm = self.min_dist_matrix()
         symFn1 = np.zeros(self.num_atoms)
         for i in range(self.num_atoms):
             for j in range(self.num_atoms):
-                symFn1[i] += self.coFn(mdm[i][j], cutoff)
+                symFn1[i] += self.cutoff_function(mdm[i][j], cutoff)
 
         return symFn1
 
-    def genSymFn2(self, cutoff, rs, eta, mdm=None):
+    def symmetry_function_2(self, cutoff, rs, eta, mdm=None):
         '''
         This function generates the second symmetry function G2 as defined in:
 
@@ -659,17 +660,17 @@ class Structure(object):
         by Jorg Behler, J. Chem. Phys. 134, 074106 (2011)
         '''
         if mdm is None:
-            mdm = self.minDistMat()
+            mdm = self.min_dist_matrix()
         symFn2 = np.zeros(self.num_atoms)
         for i in range(self.num_atoms):
             for j in range(self.num_atoms):
-                val = self.coFn(mdm[i][j], cutoff)
+                val = self.cutoff_function(mdm[i][j], cutoff)
                 if val != 0.0:
                     symFn2[i] += (math.exp(-eta*((mdm[i][j]-rs)**2)) * val)
 
         return symFn2
 
-    def genSymFn3(self, cutoff, kappa, mdm=None):
+    def symmetry_function_3(self, cutoff, kappa, mdm=None):
         '''
         This function generates the third symmetry function G3 as defined in:
 
@@ -678,17 +679,17 @@ class Structure(object):
         by Jorg Behler, J. Chem. Phys. 134, 074106 (2011)
         '''
         if mdm is None:
-            mdm = self.minDistMat()
+            mdm = self.min_dist_matrix()
         symFn3 = np.zeros(self.num_atoms)
         for i in range(self.num_atoms):
             for j in range(self.num_atoms):
-                val = self.coFn(mdm[i][j], cutoff)
+                val = self.cutoff_function(mdm[i][j], cutoff)
                 if val != 0.0:
                     symFn3[i] += (math.cos(kappa * mdm[i][j]) * val)
 
         return symFn3
 
-    def genSymFn4(self, cutoff, lamb, zeta, eta, mdm=None, mdv=None):
+    def symmetry_function_4(self, cutoff, lamb, zeta, eta, mdm=None, mdv=None):
         '''
         This function generates the forth symmetry function G4 as defined in:
 
@@ -697,9 +698,9 @@ class Structure(object):
         by Jorg Behler, J. Chem. Phys. 134, 074106 (2011)
         '''
         if mdm is None:
-            mdm = self.minDistMat()
+            mdm = self.min_dist_matrix()
         if mdv is None:
-            mdv = self.minDistVecs()
+            mdv = self.min_dist_vector()
         symFn4 = np.zeros(self.num_atoms)
 
         # vectors from atom i to j, and from i to k.
@@ -710,17 +711,17 @@ class Structure(object):
             for j in range(self.num_atoms):
                 if i == j:
                     continue
-                FcRij = self.coFn(mdm[i][j], cutoff)
+                FcRij = self.cutoff_function(mdm[i][j], cutoff)
                 if FcRij == 0.0:
                     continue
                 Rij = mdv[i][j][:]
                 for k in range(self.num_atoms):
                     if i == k or j == k:
                         continue
-                    FcRik = self.coFn(mdm[i][k], cutoff)
+                    FcRik = self.cutoff_function(mdm[i][k], cutoff)
                     if FcRik == 0.0:
                         continue
-                    FcRjk = self.coFn(mdm[j][k], cutoff)
+                    FcRjk = self.cutoff_function(mdm[j][k], cutoff)
                     if FcRjk == 0.0:
                         continue
                     Rik = mdv[i][k][:]
@@ -736,7 +737,7 @@ class Structure(object):
 
         return symFn4
 
-    def genSymFn5(self, cutoff, lamb, zeta, eta, mdm=None, mdv=None):
+    def symmetry_function_5(self, cutoff, lamb, zeta, eta, mdm=None, mdv=None):
         '''
         This function generates the fifth symmetry function G5 as defined in:
 
@@ -745,9 +746,9 @@ class Structure(object):
         by Jorg Behler, J. Chem. Phys. 134, 074106 (2011)
         '''
         if mdm is None:
-            mdm = self.minDistMat()
+            mdm = self.min_dist_matrix()
         if mdv is None:
-            mdv = self.minDistVecs()
+            mdv = self.min_dist_vector()
         symFn5 = np.zeros(self.num_atoms)
 
         # vectors from atom i to j, and from i to k.
@@ -758,14 +759,14 @@ class Structure(object):
             for j in range(self.num_atoms):
                 if i == j:
                     continue
-                FcRij = self.coFn(mdm[i][j], cutoff)
+                FcRij = self.cutoff_function(mdm[i][j], cutoff)
                 if FcRij == 0.0:
                     continue
                 Rij = mdv[i][j]
                 for k in range(self.num_atoms):
                     if i == k:
                         continue
-                    FcRik = self.coFn(mdm[i][k], cutoff)
+                    FcRik = self.cutoff_function(mdm[i][k], cutoff)
                     if FcRik == 0.0:
                         continue
                     Rik = mdv[i][k]
@@ -781,7 +782,7 @@ class Structure(object):
 
         return symFn5
 
-    def getSymFns(self):
+    def symmetry_function_set(self):
         '''
         This function returns a set of 79 symmetry functions that describe
         the local atomic environment for each atom in a structure.
@@ -790,96 +791,96 @@ class Structure(object):
         describe the local env. of atoms.
         '''
         allSym = np.zeros(shape=(self.num_atoms, 79))
-        mdm = self.minDistMat()
-        mdv = self.minDistVecs()
+        mdm = self.min_dist_matrix()
+        mdv = self.min_dist_vector(mdm=mdm)
         print("Working on the symmetry function 1 set...")
-        allSym[:, 0] = self.genSymFn1(1.0, mdm)
-        allSym[:, 1] = self.genSymFn1(1.2, mdm)
-        allSym[:, 2] = self.genSymFn1(1.4, mdm)
-        allSym[:, 3] = self.genSymFn1(1.6, mdm)
-        allSym[:, 4] = self.genSymFn1(1.8, mdm)
-        allSym[:, 5] = self.genSymFn1(2.0, mdm)
-        allSym[:, 6] = self.genSymFn1(2.2, mdm)
-        allSym[:, 7] = self.genSymFn1(2.4, mdm)
-        allSym[:, 8] = self.genSymFn1(2.6, mdm)
-        allSym[:, 9] = self.genSymFn1(2.8, mdm)
-        allSym[:, 10] = self.genSymFn1(3.0, mdm)
-        allSym[:, 11] = self.genSymFn1(3.2, mdm)
-        allSym[:, 12] = self.genSymFn1(3.4, mdm)
-        allSym[:, 13] = self.genSymFn1(3.6, mdm)
-        allSym[:, 14] = self.genSymFn1(3.8, mdm)
-        allSym[:, 15] = self.genSymFn1(4.0, mdm)
-        allSym[:, 16] = self.genSymFn1(4.2, mdm)
-        allSym[:, 17] = self.genSymFn1(4.4, mdm)
-        allSym[:, 18] = self.genSymFn1(4.6, mdm)
-        allSym[:, 19] = self.genSymFn1(4.8, mdm)
-        allSym[:, 20] = self.genSymFn1(5.0, mdm)
-        allSym[:, 21] = self.genSymFn1(5.2, mdm)
-        allSym[:, 22] = self.genSymFn1(5.4, mdm)
-        allSym[:, 23] = self.genSymFn1(5.6, mdm)
-        allSym[:, 24] = self.genSymFn1(5.8, mdm)
-        allSym[:, 25] = self.genSymFn1(6.0, mdm)
+        allSym[:, 0] = self.symmetry_function_1(1.0, mdm)
+        allSym[:, 1] = self.symmetry_function_1(1.2, mdm)
+        allSym[:, 2] = self.symmetry_function_1(1.4, mdm)
+        allSym[:, 3] = self.symmetry_function_1(1.6, mdm)
+        allSym[:, 4] = self.symmetry_function_1(1.8, mdm)
+        allSym[:, 5] = self.symmetry_function_1(2.0, mdm)
+        allSym[:, 6] = self.symmetry_function_1(2.2, mdm)
+        allSym[:, 7] = self.symmetry_function_1(2.4, mdm)
+        allSym[:, 8] = self.symmetry_function_1(2.6, mdm)
+        allSym[:, 9] = self.symmetry_function_1(2.8, mdm)
+        allSym[:, 10] = self.symmetry_function_1(3.0, mdm)
+        allSym[:, 11] = self.symmetry_function_1(3.2, mdm)
+        allSym[:, 12] = self.symmetry_function_1(3.4, mdm)
+        allSym[:, 13] = self.symmetry_function_1(3.6, mdm)
+        allSym[:, 14] = self.symmetry_function_1(3.8, mdm)
+        allSym[:, 15] = self.symmetry_function_1(4.0, mdm)
+        allSym[:, 16] = self.symmetry_function_1(4.2, mdm)
+        allSym[:, 17] = self.symmetry_function_1(4.4, mdm)
+        allSym[:, 18] = self.symmetry_function_1(4.6, mdm)
+        allSym[:, 19] = self.symmetry_function_1(4.8, mdm)
+        allSym[:, 20] = self.symmetry_function_1(5.0, mdm)
+        allSym[:, 21] = self.symmetry_function_1(5.2, mdm)
+        allSym[:, 22] = self.symmetry_function_1(5.4, mdm)
+        allSym[:, 23] = self.symmetry_function_1(5.6, mdm)
+        allSym[:, 24] = self.symmetry_function_1(5.8, mdm)
+        allSym[:, 25] = self.symmetry_function_1(6.0, mdm)
 
         print("Working on the symmetry function 2 set...")
-        allSym[:, 26] = self.genSymFn2(5.0, 2.0, 12.0, mdm)
-        allSym[:, 27] = self.genSymFn2(5.0, 2.2, 12.0, mdm)
-        allSym[:, 28] = self.genSymFn2(5.0, 2.4, 12.0, mdm)
-        allSym[:, 29] = self.genSymFn2(5.0, 2.6, 12.0, mdm)
-        allSym[:, 30] = self.genSymFn2(5.0, 2.8, 12.0, mdm)
-        allSym[:, 31] = self.genSymFn2(5.0, 3.0, 12.0, mdm)
-        allSym[:, 32] = self.genSymFn2(5.0, 3.2, 12.0, mdm)
-        allSym[:, 33] = self.genSymFn2(5.0, 3.4, 12.0, mdm)
-        allSym[:, 34] = self.genSymFn2(5.0, 3.6, 12.0, mdm)
-        allSym[:, 35] = self.genSymFn2(5.0, 3.8, 12.0, mdm)
-        allSym[:, 36] = self.genSymFn2(5.0, 4.0, 12.0, mdm)
-        allSym[:, 37] = self.genSymFn2(5.0, 4.2, 12.0, mdm)
-        allSym[:, 38] = self.genSymFn2(5.0, 4.4, 12.0, mdm)
-        allSym[:, 39] = self.genSymFn2(5.0, 4.6, 12.0, mdm)
-        allSym[:, 40] = self.genSymFn2(5.0, 4.8, 12.0, mdm)
+        allSym[:, 26] = self.symmetry_function_2(5.0, 2.0, 12.0, mdm)
+        allSym[:, 27] = self.symmetry_function_2(5.0, 2.2, 12.0, mdm)
+        allSym[:, 28] = self.symmetry_function_2(5.0, 2.4, 12.0, mdm)
+        allSym[:, 29] = self.symmetry_function_2(5.0, 2.6, 12.0, mdm)
+        allSym[:, 30] = self.symmetry_function_2(5.0, 2.8, 12.0, mdm)
+        allSym[:, 31] = self.symmetry_function_2(5.0, 3.0, 12.0, mdm)
+        allSym[:, 32] = self.symmetry_function_2(5.0, 3.2, 12.0, mdm)
+        allSym[:, 33] = self.symmetry_function_2(5.0, 3.4, 12.0, mdm)
+        allSym[:, 34] = self.symmetry_function_2(5.0, 3.6, 12.0, mdm)
+        allSym[:, 35] = self.symmetry_function_2(5.0, 3.8, 12.0, mdm)
+        allSym[:, 36] = self.symmetry_function_2(5.0, 4.0, 12.0, mdm)
+        allSym[:, 37] = self.symmetry_function_2(5.0, 4.2, 12.0, mdm)
+        allSym[:, 38] = self.symmetry_function_2(5.0, 4.4, 12.0, mdm)
+        allSym[:, 39] = self.symmetry_function_2(5.0, 4.6, 12.0, mdm)
+        allSym[:, 40] = self.symmetry_function_2(5.0, 4.8, 12.0, mdm)
 
         print("Working on the symmetry function 3 set...")
-        allSym[:, 41] = self.genSymFn3(5.0, 1.0, mdm)
-        allSym[:, 42] = self.genSymFn3(5.0, 1.5, mdm)
-        allSym[:, 43] = self.genSymFn3(5.0, 2.0, mdm)
-        allSym[:, 44] = self.genSymFn3(5.0, 2.5, mdm)
-        allSym[:, 45] = self.genSymFn3(5.0, 3.0, mdm)
-        allSym[:, 46] = self.genSymFn3(5.0, 3.5, mdm)
-        allSym[:, 47] = self.genSymFn3(5.0, 4.0, mdm)
-        allSym[:, 48] = self.genSymFn3(5.0, 4.5, mdm)
+        allSym[:, 41] = self.symmetry_function_3(5.0, 1.0, mdm)
+        allSym[:, 42] = self.symmetry_function_3(5.0, 1.5, mdm)
+        allSym[:, 43] = self.symmetry_function_3(5.0, 2.0, mdm)
+        allSym[:, 44] = self.symmetry_function_3(5.0, 2.5, mdm)
+        allSym[:, 45] = self.symmetry_function_3(5.0, 3.0, mdm)
+        allSym[:, 46] = self.symmetry_function_3(5.0, 3.5, mdm)
+        allSym[:, 47] = self.symmetry_function_3(5.0, 4.0, mdm)
+        allSym[:, 48] = self.symmetry_function_3(5.0, 4.5, mdm)
 
         print("Working on the symmetry function 4 set...")
-        allSym[:, 49] = self.genSymFn4(5.0, 1.0, 1.0, 0.05, mdm, mdv)
-        allSym[:, 50] = self.genSymFn4(5.0, 1.0, 2.0, 0.05, mdm, mdv)
-        allSym[:, 51] = self.genSymFn4(5.0, 1.0, 3.0, 0.05, mdm, mdv)
-        allSym[:, 52] = self.genSymFn4(5.0, 1.0, 4.0, 0.05, mdm, mdv)
-        allSym[:, 53] = self.genSymFn4(5.0, 1.0, 5.0, 0.05, mdm, mdv)
-        allSym[:, 54] = self.genSymFn4(5.0, 1.0, 1.0, 0.07, mdm, mdv)
-        allSym[:, 55] = self.genSymFn4(5.0, 1.0, 2.0, 0.07, mdm, mdv)
-        allSym[:, 56] = self.genSymFn4(5.0, 1.0, 3.0, 0.07, mdm, mdv)
-        allSym[:, 57] = self.genSymFn4(5.0, 1.0, 4.0, 0.07, mdm, mdv)
-        allSym[:, 58] = self.genSymFn4(5.0, 1.0, 5.0, 0.07, mdm, mdv)
-        allSym[:, 59] = self.genSymFn4(5.0, 1.0, 1.0, 0.09, mdm, mdv)
-        allSym[:, 60] = self.genSymFn4(5.0, 1.0, 2.0, 0.09, mdm, mdv)
-        allSym[:, 61] = self.genSymFn4(5.0, 1.0, 3.0, 0.09, mdm, mdv)
-        allSym[:, 62] = self.genSymFn4(5.0, 1.0, 4.0, 0.09, mdm, mdv)
-        allSym[:, 63] = self.genSymFn4(5.0, 1.0, 5.0, 0.09, mdm, mdv)
+        allSym[:, 49] = self.symmetry_function_4(5.0, 1.0, 1.0, 0.05, mdm, mdv)
+        allSym[:, 50] = self.symmetry_function_4(5.0, 1.0, 2.0, 0.05, mdm, mdv)
+        allSym[:, 51] = self.symmetry_function_4(5.0, 1.0, 3.0, 0.05, mdm, mdv)
+        allSym[:, 52] = self.symmetry_function_4(5.0, 1.0, 4.0, 0.05, mdm, mdv)
+        allSym[:, 53] = self.symmetry_function_4(5.0, 1.0, 5.0, 0.05, mdm, mdv)
+        allSym[:, 54] = self.symmetry_function_4(5.0, 1.0, 1.0, 0.07, mdm, mdv)
+        allSym[:, 55] = self.symmetry_function_4(5.0, 1.0, 2.0, 0.07, mdm, mdv)
+        allSym[:, 56] = self.symmetry_function_4(5.0, 1.0, 3.0, 0.07, mdm, mdv)
+        allSym[:, 57] = self.symmetry_function_4(5.0, 1.0, 4.0, 0.07, mdm, mdv)
+        allSym[:, 58] = self.symmetry_function_4(5.0, 1.0, 5.0, 0.07, mdm, mdv)
+        allSym[:, 59] = self.symmetry_function_4(5.0, 1.0, 1.0, 0.09, mdm, mdv)
+        allSym[:, 60] = self.symmetry_function_4(5.0, 1.0, 2.0, 0.09, mdm, mdv)
+        allSym[:, 61] = self.symmetry_function_4(5.0, 1.0, 3.0, 0.09, mdm, mdv)
+        allSym[:, 62] = self.symmetry_function_4(5.0, 1.0, 4.0, 0.09, mdm, mdv)
+        allSym[:, 63] = self.symmetry_function_4(5.0, 1.0, 5.0, 0.09, mdm, mdv)
 
         print("Working on the symmetry function 5 set...")
-        allSym[:, 64] = self.genSymFn5(5.0, 1.0, 1.0, 0.3, mdm, mdv)
-        allSym[:, 65] = self.genSymFn5(5.0, 1.0, 2.0, 0.3, mdm, mdv)
-        allSym[:, 66] = self.genSymFn5(5.0, 1.0, 3.0, 0.3, mdm, mdv)
-        allSym[:, 67] = self.genSymFn5(5.0, 1.0, 4.0, 0.3, mdm, mdv)
-        allSym[:, 68] = self.genSymFn5(5.0, 1.0, 5.0, 0.3, mdm, mdv)
-        allSym[:, 69] = self.genSymFn5(5.0, 1.0, 1.0, 0.4, mdm, mdv)
-        allSym[:, 70] = self.genSymFn5(5.0, 1.0, 2.0, 0.4, mdm, mdv)
-        allSym[:, 71] = self.genSymFn5(5.0, 1.0, 3.0, 0.4, mdm, mdv)
-        allSym[:, 72] = self.genSymFn5(5.0, 1.0, 4.0, 0.4, mdm, mdv)
-        allSym[:, 73] = self.genSymFn5(5.0, 1.0, 5.0, 0.4, mdm, mdv)
-        allSym[:, 74] = self.genSymFn5(5.0, 1.0, 1.0, 0.5, mdm, mdv)
-        allSym[:, 75] = self.genSymFn5(5.0, 1.0, 2.0, 0.5, mdm, mdv)
-        allSym[:, 76] = self.genSymFn5(5.0, 1.0, 3.0, 0.5, mdm, mdv)
-        allSym[:, 77] = self.genSymFn5(5.0, 1.0, 4.0, 0.5, mdm, mdv)
-        allSym[:, 78] = self.genSymFn5(5.0, 1.0, 5.0, 0.5, mdm, mdv)
+        allSym[:, 64] = self.symmetry_function_5(5.0, 1.0, 1.0, 0.3, mdm, mdv)
+        allSym[:, 65] = self.symmetry_function_5(5.0, 1.0, 2.0, 0.3, mdm, mdv)
+        allSym[:, 66] = self.symmetry_function_5(5.0, 1.0, 3.0, 0.3, mdm, mdv)
+        allSym[:, 67] = self.symmetry_function_5(5.0, 1.0, 4.0, 0.3, mdm, mdv)
+        allSym[:, 68] = self.symmetry_function_5(5.0, 1.0, 5.0, 0.3, mdm, mdv)
+        allSym[:, 69] = self.symmetry_function_5(5.0, 1.0, 1.0, 0.4, mdm, mdv)
+        allSym[:, 70] = self.symmetry_function_5(5.0, 1.0, 2.0, 0.4, mdm, mdv)
+        allSym[:, 71] = self.symmetry_function_5(5.0, 1.0, 3.0, 0.4, mdm, mdv)
+        allSym[:, 72] = self.symmetry_function_5(5.0, 1.0, 4.0, 0.4, mdm, mdv)
+        allSym[:, 73] = self.symmetry_function_5(5.0, 1.0, 5.0, 0.4, mdm, mdv)
+        allSym[:, 74] = self.symmetry_function_5(5.0, 1.0, 1.0, 0.5, mdm, mdv)
+        allSym[:, 75] = self.symmetry_function_5(5.0, 1.0, 2.0, 0.5, mdm, mdv)
+        allSym[:, 76] = self.symmetry_function_5(5.0, 1.0, 3.0, 0.5, mdm, mdv)
+        allSym[:, 77] = self.symmetry_function_5(5.0, 1.0, 4.0, 0.5, mdm, mdv)
+        allSym[:, 78] = self.symmetry_function_5(5.0, 1.0, 5.0, 0.5, mdm, mdv)
 
         return allSym
 
@@ -894,45 +895,49 @@ class Structure(object):
             covRads[element] = co.covalRad[element]
         return covRads
 
-    def bondingList(self, mdm=None, bf=1.1, covRads=None, aElementList=None):
+    def bondingList(self, mdm=None, bonding_factor=1.1, covRads=None, aElementList=None):
         '''
         This function creates a list of dicts. for every atom x, we get a dict
         of atoms to which x is bonded.
         The optional arguments are "covRads", which is a list of the covalent
         radii for every unique element, and "mdm" which is the min. distance
-        between atoms, when PBCs are taken into consideration, and "bf" that is
+        between atoms, when PBCs are taken into consideration.
         is the bonding factor. atoms are considered to be bonded if their
-        distance is less or equal to the sum of their covalent radii * bf.
-        The default for bf is 1.1.
+        distance is less or equal to the sum of their covalent radii * bonding_factor.
+        The default for bonding_factor is 1.1.
         NOTE: The returned list starts at 0. so atom 102 will be returned
         as atom 101, etc.
         '''
         if mdm is None:
-            mdm = self.minDistMat()
+            mdm = self.min_dist_matrix()
         if covRads is None:
             covRads = self.covalentRadii()
         if aElementList is None:
-            aElementList = self.elementNames()
+            aElementList = self.element_names()
 
         bondingList = collections.defaultdict(dict)
         for atom1 in range(self.num_atoms-1):
             for atom2 in range(atom1 + 1, self.num_atoms):
                 bondDist = (covRads[aElementList[atom1]] +
-                            covRads[aElementList[atom2]]) * bf
+                            covRads[aElementList[atom2]]) * bonding_factor
                 if bondDist >= mdm[atom1][atom2]:
                     bondingList[atom1][atom2] = mdm[atom1][atom2]
                     bondingList[atom2][atom1] = mdm[atom2][atom1]
 
         return bondingList
 
-    def coordination(self, bondingList=None, bf=1.1):
+    def coordination(self, bondingList=None, bonding_factor=1.1):
         '''
         This function returns the coordination of each atom in the structure.
-        by coordination of an atom x, we mean the number of atoms to which x is
-        bonded.
+
+        By coordination of an atom x, we mean the number of atoms to which x is
+        bonded. Two atoms are considered bonded if the distance between them is
+        less or equal to the sum of their covalent radii times a bonding factor
+        which is passed to this function. The default value of the bonding
+        factor is 1.1.
         '''
         if bondingList is None:
-            bondingList = self.bondingList(bf=bf)
+            bondingList = self.bondingList(bonding_factor=bonding_factor)
         return [len(bondingList[i]) for i in range(len(bondingList))]
 
     def toAU(self):
@@ -943,12 +948,12 @@ class Structure(object):
         This function takes a structure object and converts it to SI units.
         '''
         self.rlm *= co.AU2SI
-        self.cell_info = self.getCellInfoFromRlm()
+        self.cell_info = self.cell_info_from_rlm()
         self.mlr = np.linalg.inv(self.rlm)
         self.atom_coordinates *= co.AU2SI
         return self
 
-    def getCellInfoFromRlm(self):
+    def cell_info_from_rlm(self):
         '''
         This function computes the magnitudes of the a, b, and c cell
         vectors as well as the alpha, beta, gamma angles. together, these
@@ -979,7 +984,7 @@ class Structure(object):
         cell_info[5] = math.degrees(cell_info[5])
         return cell_info
 
-    def writeLAMMPS(self, file_name="data.lmp"):
+    def write_lammps(self, file_name="data.lmp"):
         '''
         This function prints a file, "data.lmp" by default, that can
         be used as input to LAMMPS. this input is used by lammps to
@@ -991,7 +996,7 @@ class Structure(object):
             sys.exit("File " + file_name + " already exists!")
 
         # convert to cartesian. lammps input must be in cartesian.
-        self.toCart()
+        self.to_cart()
 
         string = ''
         string += "AutoGenerated title from conversionTools\n"

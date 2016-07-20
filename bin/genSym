@@ -4,5 +4,5 @@ import olcaoPy.fileOps as fo
 import olcaoPy.control as ctrl
 
 s = ctrl.Structure("olcao.skl")
-r = s.getSymFns()
+r = s.symmetry_function_set()
 fo.writeFloats("symmetryFns.out", r)

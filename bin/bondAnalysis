@@ -61,7 +61,7 @@ if args.coord:
 s = ctrl.Structure(args.iFile)
 
 if args.bl or args.coord:
-    r = s.bondingList(bf = args.bf)
+    r = s.bonding_list(bf = args.bf)
 
 # carry out the requested action(s)
 if args.bl:
@@ -82,7 +82,7 @@ if args.bl:
     f.close()
 
 if args.coord:
-    c = s.coordination(bondingList = r)
+    c = s.coordination(bonding_list = r)
     string = ""
     for i in range(len(c)):
         string += "Atom: "

@@ -55,18 +55,18 @@ else:
 
 # convert
 if options.convCoors:
-    if s.coordType == "F":
-        s.toCart()
-    elif s.coordType == "C":
-        s.toFrac()
+    if s.coordinate_type == "F":
+        s.to_cart()
+    elif s.coordinate_type == "C":
+        s.to_frac()
     else:
         sys.exit("unknow coordinate type: " + s.coordType)
 
 if out_extension == ".skl":
-    s.writeSkl(fileName = options.oFile)
+    s.write_skl(fileName = options.oFile)
 elif out_extension == ".xyz":
-    s.writeXyz(fileName = options.oFile)
+    s.write_xyz(fileName = options.oFile)
 elif out_extension == ".lmp":
-    s.writeLAMMPS(fileName = options.oFile)
+    s.write_lammps(fileName = options.oFile)
 else:
     print "Dont know how to print this output file" + options.oFile

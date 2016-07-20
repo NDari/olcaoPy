@@ -9,7 +9,6 @@ import sys
 import subprocess
 import multiprocessing
 import random
-import copy
 import numpy as np
 
 
@@ -46,7 +45,7 @@ class Candidate(object):
 
 def evalFitness(candidate):
     if not os.path.exists(candidate.name):
-        sys.exit("Directory " + name + " does not exist.")
+        sys.exit("Directory " + candidate.name + " does not exist.")
     os.chdir(candidate.name)
     print(os.getcwd())
     candidate.struct.writeLAMMPS()
@@ -108,7 +107,6 @@ def initVelocities(candidate, scalingFactor=3.0):
     return
 
 def main():
-    numWeightPairs = 2
     numCandids = 8
     numProcs = 4
 
