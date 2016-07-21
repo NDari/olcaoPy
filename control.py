@@ -25,7 +25,7 @@ class Structure(object):
                     associated with this structure.
         :coordinate_type
                     The way we notate the atomic coordinates. Currently this
-                    is "F" for fractional, and "C" for cartesian.
+                    is "F" for fractional, and "C" for Cartesian.
         :num_atoms
                     The total number of atoms in the system.
         :atom_coordinates
@@ -46,16 +46,16 @@ class Structure(object):
         :supercell_mirror
                     Used sometimes for things......
         :cell_type
-                    The cell type. either "F" for full, or "P" for
+                    The cell type. Either "F" for full, or "P" for
                     primitive.
         :rlm
-                    real lattice matrix. this is the projection of
+                    real lattice matrix. This is the projection of
                     a, b, and c vectors on the x, y, and z axis. it is
                     of the form: ax ay az
                                  bx by bz
                                  cx cy cz
         :mlr
-                    the inverse of the real lattice matrix. the name is
+                    the inverse of the real lattice matrix. The name is
                     a silly joke.
 
         If the file_name is not passed to the constructor, then an empty
@@ -128,7 +128,7 @@ class Structure(object):
             #
             #     # get the information.
             #     self.title = fo.XyzComment(xyz)
-            #     self.coordinate_type = "C"  # always cartesian in an xyz file
+            #     self.coordinate_type = "C"  # always Cartesian in an xyz file
             #     self.num_atoms = fo.XyzNumAtoms(xyz)
             #     self.atom_coordinates = fo.XyzCoors(xyz)
             #     self.atom_names = fo.XyzAtomNames(xyz)
@@ -229,7 +229,7 @@ class Structure(object):
                                 math.cos(bet) *
                                 math.cos(gam)))
 
-        # assume a and x are colinear.
+        # assume a and x are coaxial.
         mlr[0][0] = 1.0 / a
         mlr[0][1] = 0.0
         mlr[0][2] = 0.0
@@ -265,7 +265,7 @@ class Structure(object):
     def to_cart(self):
         """
         Modifies the structure, by converting its atomic coordinates to
-        cartesian. If the coordinates are already cartesian, nothing
+        Cartesian. If the coordinates are already Cartesian, nothing
         is done.
         """
         if self.coordinate_type == 'C':  # nothing to do.
@@ -382,7 +382,7 @@ class Structure(object):
         """
         This function writes the structure in an xyz format. This format
         starts with the number of atoms, followed by a comment, and then
-        num_atoms lines containing the element name and the cartesian
+        num_atoms lines containing the element name and the Cartesian
         coordinates for each atom.
 
         This function has to optional parameters, the comment (without
@@ -394,7 +394,10 @@ class Structure(object):
 
         if comment is None:
             comment = "Auto-generated comment"
-        self.to_cart()
+        converted_to_cart = False
+        if self.coordinate_type == "F":
+            self.to_cart()
+            converted_to_cart = True
         string = ""
         string += str(self.num_atoms)
         string += "\n"
@@ -410,6 +413,8 @@ class Structure(object):
         with open(file_name, 'w') as f:
             f.write(string)
 
+        if converted_to_cart:
+            self.to_frac()
         return self
 
     def mutate(self, mag, prob):
@@ -420,7 +425,10 @@ class Structure(object):
         atom will not move, and 1.0 means a %100 chance that a given atom will
         move.
         '''
-        self.to_cart()
+        converted_to_cart = False
+        if self.coordinate_type == "F":
+            self.to_cart()
+            converted_to_cart = True
         for i in range(self.num_atoms):
             if random.random() < prob:
                 theta = random.random() * math.pi
@@ -431,6 +439,8 @@ class Structure(object):
                 self.atom_coordinates[i] += [x, y, z]
         self.apply_pbc()
         self.space_group = "1_a"
+        if converted_to_cart:
+            self.to_frac()
         return self
 
     def element_list(self):
@@ -475,11 +485,11 @@ class Structure(object):
         system. the atom element name is the name of the element of the
         atom without any added digits or other marks.
         """
-        atomElementList = []
+        atom_element_list = []
         for atom in range(self.num_atoms):
             name = re.split(r'(\d+)', self.atom_names[atom])[0]
-            atomElementList.append(name)
-        return atomElementList
+            atom_element_list.append(name)
+        return atom_element_list
 
     def atom_z_num(self):
         """
@@ -523,7 +533,7 @@ class Structure(object):
             for x, y, z in itertools.product([-1, 0, 1], repeat=3):
                 atom = np.copy(self.atom_coordinates[a])
                 # convert the copy to fractional, move it, and convert
-                # back to cartesian. then calculate distance from all
+                # back to Cartesian. then calculate distance from all
                 # other atoms in the system.
                 atom = atom.dot(self.mlr),
                 atom += [float(x), float(y), float(z)]
@@ -577,7 +587,7 @@ class Structure(object):
             for x, y, z in itertools.product([-1, 0, 1], repeat=3):
                 atom = np.copy(self.atom_coordinates[a])
                 # convert the copy to fractional, move it, and convert
-                # back to cartesian. then calculate distance from all
+                # back to Cartesian. then calculate distance from all
                 # other atoms in the system.
                 atom = atom.dot(self.mlr),
                 atom += [float(x), float(y), float(z)]
@@ -902,7 +912,7 @@ class Structure(object):
         The optional arguments are "covRads", which is a list of the covalent
         radii for every unique element, and "mdm" which is the min. distance
         between atoms, when PBCs are taken into consideration.
-        is the bonding factor. atoms are considered to be bonded if their
+        is the bonding factor. Atoms are considered to be bonded if their
         distance is less or equal to the sum of their covalent radii * bonding_factor.
         The default for bonding_factor is 1.1.
         NOTE: The returned list starts at 0. so atom 102 will be returned
@@ -956,7 +966,7 @@ class Structure(object):
     def cell_info_from_rlm(self):
         '''
         This function computes the magnitudes of the a, b, and c cell
-        vectors as well as the alpha, beta, gamma angles. together, these
+        vectors as well as the alpha, beta, gamma angles. Together, these
         six parameters are the cell information.
         '''
         cell_info = np.zeros(6)
@@ -995,11 +1005,13 @@ class Structure(object):
         if os.path.isfile(file_name):
             sys.exit("File " + file_name + " already exists!")
 
-        # convert to cartesian. lammps input must be in cartesian.
-        self.to_cart()
-
+        # convert to Cartesian. lammps input must be in Cartesian.
+        converted_to_cart = False
+        if self.coordinate_type == "F":
+            self.to_cart()
+            converted_to_cart = True
         string = ''
-        string += "AutoGenerated title from conversionTools\n"
+        string += "Auto Generated title from conversionTools\n"
         string += str(self.num_atoms)
         string += " atoms\n"
         numTypes = self.elementList()
@@ -1018,10 +1030,10 @@ class Structure(object):
 
         # instead of element names, such as 'si' or 'ca', lammps uses
         # type IDs which are integers starting from 1 up to the total
-        # number of types in the system. so we need to make a dictionary
+        # number of types in the system. So we need to make a dictionary
         # to map element names to types.
         # note that the notion of 'type' in lammps is distinct from the
-        # one used in olcao. there is no direct correlation.
+        # one used in olcao. There is no direct correlation.
         counter = 1
         nameDict = {}
         for i in range(len(numTypes)):
@@ -1043,4 +1055,7 @@ class Structure(object):
 
         with open(file_name, 'w') as f:
             f.write(string)
+
+        if converted_to_cart:
+            self.to_frac()
         return self
