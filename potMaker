@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import olcaoPy.fileOps as fo
+import fileOps as fo
 import sys
 import math
 import optparse

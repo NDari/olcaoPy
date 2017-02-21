@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-import olcaoPy.fileOps as fo
-import olcaoPy.control as ctrl
+import fileOps as fo
+import control as ctrl
 
 s = ctrl.Structure("olcao.skl")
 r = s.getSymFns()

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import olcaoPy.control as ctrl
+import control as ctrl
 import optparse
 import sys
 import os

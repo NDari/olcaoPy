@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import numpy as np
-import olcaoPy.fileOps as fo
+import fileOps as fo
 
 summary = fo.readFile("summary")
 
