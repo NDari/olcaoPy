@@ -1,14 +1,7 @@
 import numpy as np
-import olcaoPy.constants as co
-import olcaoPy.fileOps as fo
-import sys
-import os
-import re
-import math
-import copy
-import random
-import collections
-import json
+import constants as co
+import fileOps as fo
+import sys, os, re, math, copy, random, collections, json, itertools
 
 class Structure(object):
 
@@ -134,9 +127,7 @@ class Structure(object):
         """
         # lets redefine the passed parameters using the physical names. This is
         # wasteful, but makes the code more readable.
-        a = self.cellInfo[0]
-        b = self.cellInfo[1]
-        c = self.cellInfo[2]
+        a, b, c = self.cellInfo[0:3]
         # Convert the angles to radians.
         alpha = math.radians(self.cellInfo[3])
         beta  = math.radians(self.cellInfo[4])
@@ -144,13 +135,9 @@ class Structure(object):
         # Start the construction of the RLM, the real lattice array.
         rlm = np.zeros(shape=(3,3), dtype=float)
         # Assume that a and x are coaxial.
-        rlm[0][0] = a
-        rlm[0][1] = 0.0
-        rlm[0][2] = 0.0
+        rlm[0] = a, 0.0, 0.0
         # b is then in the xy-plane.
-        rlm[1][0] = (b * math.cos(gamma))
-        rlm[1][1] = (b * math.sin(gamma))
-        rlm[1][2] = 0.0
+        rlm[1] = (b * math.cos(gamma)), (b * math.sin(gamma)), 0.0
         # c is a mix of x,y, and z directions.
         rlm[2][0] = (c * math.cos(beta))
         rlm[2][1] = (c * (math.cos(alpha) - math.cos(gamma)*math.cos(beta)) /
@@ -199,9 +186,15 @@ class Structure(object):
         clusters. Do not use this subroutine directly unless you know what
         you are doing.
         '''
-        self.toCart()
+        changed = True
+        if self.coordType == 'F':
+            self.toCart()
+            changed = True
         for i in self.atomCoors:
             i[:] += (buf/2.0)
+
+        if changed:
+            self.toFrac()
         return self
 
     def clone(self):
@@ -247,7 +240,7 @@ class Structure(object):
         else:
             sys.exit("Unknown coordinate type " + self.coordType)
         string = string + str(self.numAtoms) + "\n"
-        for i in xrange(self.numAtoms):
+        for i in range(self.numAtoms):
             string += str(self.atomNames[i])
             string += " "
             string += (" ".join(str(x) for x in self.atomCoors[i]))
@@ -286,13 +279,16 @@ class Structure(object):
 
         if comment == None:
             comment = "Auto-generated comment"
-        self.toCart()
+        changed = False
+        if self.coordType == 'F':
+            self.toCart()
+            changed = True
         string = ""
         string += str(self.numAtoms)
         string += "\n"
         string += comment
         elementalNames = self.elementNames()
-        for i in xrange(self.numAtoms):
+        for i in range(self.numAtoms):
             string += "\n"
             string += (elementalNames[i][:1].upper() + elementalNames[i][1:])
             string += " "
@@ -302,6 +298,8 @@ class Structure(object):
         with open(fileName, 'w') as f:
             f.write(string)
 
+        if changed:
+            self.toFrac()
         return self
 
     def mutate(self, mag, prob):
@@ -312,8 +310,11 @@ class Structure(object):
         atom will not move, and 1.0 means a %100 chance that a given atom will
         move.
         '''
-        self.toCart()
-        for i in xrange(self.numAtoms):
+        changed = False
+        if self.coordType == 'F':
+            self.toCart()
+            changed = True
+        for i in range(self.numAtoms):
             if random.random() < prob:
                 theta = random.random() * math.pi
                 phi = random.random() * 2.0 * math.pi
@@ -321,6 +322,8 @@ class Structure(object):
                 y = mag * math.sin(theta) * math.sin(phi)
                 z = mag * math.cos(theta)
                 self.atomCoors[i] += [x, y, z]
+        if changed:
+            self.toFrac()
         self.applyPBC()
         self.spaceGrp = "1_a"
         return self
@@ -332,7 +335,7 @@ class Structure(object):
         priodic table, such as "H", "Li", "Ag", etc.
         """
         elementList = []
-        for atom in xrange(self.numAtoms):
+        for atom in range(self.numAtoms):
             # the atom name may contain numbers indicating the type or
             # species of the elements such as "y4" or "ca3_1". so we will
             # split the name based on the numbers, taking only the first
@@ -356,7 +359,7 @@ class Structure(object):
         differently by designating them as si1 and si2.
         """
         speciesList = []
-        for atom in xrange(self.numAtoms):
+        for atom in range(self.numAtoms):
             if self.atomNames[atom] not in speciesList:
                 speciesList.append(self.atomNames[atom])
         return speciesList
@@ -368,7 +371,7 @@ class Structure(object):
         atom without any added digits or other marks.
         """
         atomElementList = []
-        for atom in xrange(self.numAtoms):
+        for atom in range(self.numAtoms):
             name = re.split(r'(\d+)', self.atomNames[atom])[0]
             atomElementList.append(name)
         return atomElementList
@@ -380,7 +383,7 @@ class Structure(object):
         """
         atomElementNames = self.elementNames()
         atomZNums        = []
-        for atom in xrange(self.numAtoms):
+        for atom in range(self.numAtoms):
             atomZNums.append(co.atomicZ[atomElementNames[atom]])
         return atomZNums
 
@@ -390,14 +393,9 @@ class Structure(object):
         fractional. If the coordinates are already fractional, nothing
         is done.
         """
-        if self.coordType == 'F':
-            return
-        for i in self.atomCoors:
-            (i[0], i[1], i[2])=(sum(i[:] * self.mlr[:][0]),
-                                sum(i[:] * self.mlr[:][1]),
-                                sum(i[:] * self.mlr[:][2]))
-
-        self.coordType = 'F'
+        if self.coordType != 'F':
+            self.atomCoors = self.atomCoors.dot(self.mlr)
+            self.coordType = 'F'
         return self
 
     def toCart(self):
@@ -406,14 +404,9 @@ class Structure(object):
         cartesian. If the coordinates are already cartesian, nothing
         is done.
         """
-        if self.coordType == 'C':
-            return
-        for i in self.atomCoors:
-            (i[0], i[1], i[2])=(sum(i[:] * self.rlm[:][0]),
-                                sum(i[:] * self.rlm[:][1]),
-                                sum(i[:] * self.rlm[:][2]))
-
-        self.coordType = 'C'
+        if self.coordType != 'C':
+            self.atomCoors = self.atomCoors.dot(self.rlm)
+            self.coordType = 'C'
         return self
 
     def minDistMat(self):
@@ -438,32 +431,36 @@ class Structure(object):
         mdm[:][:] = 1000000000.0
 
         atom = np.zeros(3)
-        self.toCart()
-        for a in xrange(self.numAtoms):
-            for x in xrange(-1, 2):
-                for y in xrange(-1, 2):
-                    for z in xrange(-1, 2):
-                        atom = np.copy(self.atomCoors[a])
-                        # convert the copy to fractional, move it, and convert
-                        # back to cartesian. then calculate distance from all
-                        # other atoms in the system.
-                        (atom[0],atom[1],atom[2])=(sum(atom[:]*self.mlr[:][0]),
-                                                   sum(atom[:]*self.mlr[:][1]),
-                                                   sum(atom[:]*self.mlr[:][2]))
-                        atom[:] += [float(x), float(y), float(z)]
-                        (atom[0],atom[1],atom[2])=(sum(atom[:]*self.rlm[:][0]),
-                                                   sum(atom[:]*self.rlm[:][1]),
-                                                   sum(atom[:]*self.rlm[:][2]))
-                        for b in xrange(a+1, self.numAtoms):
-                            dist = math.sqrt(sum((atom-self.atomCoors[b])*
-                                                 (atom-self.atomCoors[b])))
-                            if dist < mdm[a][b]:
-                                mdm[a][b] = dist
-                                mdm[b][a] = dist
+        changed = False
+        if self.coordType == 'F':
+            self.toCart()
+            changed = True
 
-        for i in xrange(self.numAtoms):
+        for a in range(self.numAtoms):
+            for x, y, z in itertools.product([-1, 0, 1], repeat=3):
+                atom = np.copy(self.atomCoors[a])
+                # convert the copy to fractional, move it, and convert
+                # back to cartesian. then calculate distance from all
+                # other atoms in the system.
+                (atom[0],atom[1],atom[2])=(sum(atom[:]*self.mlr[:][0]),
+                                           sum(atom[:]*self.mlr[:][1]),
+                                           sum(atom[:]*self.mlr[:][2]))
+                atom[:] += [float(x), float(y), float(z)]
+                (atom[0],atom[1],atom[2])=(sum(atom[:]*self.rlm[:][0]),
+                                           sum(atom[:]*self.rlm[:][1]),
+                                           sum(atom[:]*self.rlm[:][2]))
+                for b in range(a+1, self.numAtoms):
+                    dist = math.sqrt(sum((atom-self.atomCoors[b])*
+                                         (atom-self.atomCoors[b])))
+                    if dist < mdm[a][b]:
+                        mdm[a][b] = dist
+                        mdm[b][a] = dist
+
+        for i in range(self.numAtoms):
             mdm[i][i] = 0.0
 
+        if changed:
+            self.toFrac()
         return mdm
 
     def minDistVecs(self):
@@ -493,34 +490,34 @@ class Structure(object):
         mdv = np.zeros(shape=(self.numAtoms, self.numAtoms, 3))
 
         atom = np.zeros(3)
-        self.toCart()
-        for a in xrange(self.numAtoms):
-            for x in xrange(-1, 2):
-                for y in xrange(-1, 2):
-                    for z in xrange(-1, 2):
-                        atom = np.copy(self.atomCoors[a])
-                        # convert the copy to fractional, move it, and convert
-                        # back to cartesian. then calculate distance from all
-                        # other atoms in the system.
-                        (atom[0],atom[1],atom[2])=(sum(atom[:]*self.mlr[:][0]),
-                                                   sum(atom[:]*self.mlr[:][1]),
-                                                   sum(atom[:]*self.mlr[:][2]))
-                        atom[:] += [float(x), float(y), float(z)]
-                        (atom[0],atom[1],atom[2])=(sum(atom[:]*self.rlm[:][0]),
-                                                   sum(atom[:]*self.rlm[:][1]),
-                                                   sum(atom[:]*self.rlm[:][2]))
-                        for b in xrange(a+1, self.numAtoms):
-                            dist = math.sqrt(sum((atom-self.atomCoors[b])*
-                                                 (atom-self.atomCoors[b])))
-                            if dist < mdm[a][b]:
-                                mdm[a][b] = dist
-                                mdm[b][a] = dist
+        changed = False
+        if self.coordType == 'F':
+            self.toCart()
+            changed = True
 
-                                mdv[a][b][:] = self.atomCoors[b] - atom
-                                mdv[b][a][:] = atom - self.atomCoors[b]
-        for i in xrange(self.numAtoms):
+        for a in range(self.numAtoms):
+            for x, y, z in itertools.product([-1, 0, 1], repeat=3):
+                atom = np.copy(self.atomCoors[a])
+                # convert the copy to fractional, move it, and convert
+                # back to cartesian. then calculate distance from all
+                # other atoms in the system.
+                atom = atom.dot(self.mlr)
+                atom[:] += [float(x), float(y), float(z)]
+                atom = atom.dot(self.rlm)
+                for b in range(a+1, self.numAtoms):
+                    dist = math.sqrt(sum((atom-self.atomCoors[b])*
+                                         (atom-self.atomCoors[b])))
+                    if dist < mdm[a][b]:
+                        mdm[a][b] = dist
+                        mdm[b][a] = dist
+
+                        mdv[a][b][:] = self.atomCoors[b] - atom
+                        mdv[b][a][:] = atom - self.atomCoors[b]
+        for i in range(self.numAtoms):
             mdv[i][i][:] = 0.0
 
+        if changed:
+            self.toFrac()
         return mdv
 
     def applyPBC(self):
@@ -530,21 +527,17 @@ class Structure(object):
         ensures that all atoms in the system are placed between 0 and 1 in
         fractional coordinates.
         '''
-        self.toFrac()
-        for a in range(self.numAtoms):
-            while self.atomCoors[a][0] > 1.0:
-                self.atomCoors[a][0] -= 1.0
-            while self.atomCoors[a][1] > 1.0:
-                self.atomCoors[a][1] -= 1.0
-            while self.atomCoors[a][2] > 1.0:
-                self.atomCoors[a][2] -= 1.0
-            while self.atomCoors[a][0] < 0.0:
-                self.atomCoors[a][0] += 1.0
-            while self.atomCoors[a][1] < 0.0:
-                self.atomCoors[a][1] += 1.0
-            while self.atomCoors[a][2] < 0.0:
-                self.atomCoors[a][2] += 1.0
+        changed = False
+        if self.coordType == 'C':
+            self.toFrac()
+            changed = True
 
+        too_high = np.vectorize(lambda x: x - math.floor(x) if x > 1.0 else x)
+        too_low  = np.vectorize(lambda x: x + math.floor(x) if x < 0.0 else x)
+        self.atomCoors = too_high(self.atomCoors)
+        self.atomCoors = too_low(self.atomCoors)
+        if changed:
+            self.toCart()
         return self
 
     def coFn(self, dist, cutoffRad):
@@ -720,7 +713,7 @@ class Structure(object):
         allSym = np.zeros(shape=(self.numAtoms, 79))
         mdm = self.minDistMat()
         mdv = self.minDistVecs()
-        print "Working on the symmetry function 1 set..."
+        print("Working on the symmetry function 1 set...")
         allSym[:, 0]  = self.genSymFn1(1.0, mdm)
         allSym[:, 1]  = self.genSymFn1(1.2, mdm)
         allSym[:, 2]  = self.genSymFn1(1.4, mdm)
@@ -748,7 +741,7 @@ class Structure(object):
         allSym[:, 24] = self.genSymFn1(5.8, mdm)
         allSym[:, 25] = self.genSymFn1(6.0, mdm)
 
-        print "Working on the symmetry function 2 set..."
+        print("Working on the symmetry function 2 set...")
         allSym[:, 26] = self.genSymFn2(5.0, 2.0, 12.0, mdm)
         allSym[:, 27] = self.genSymFn2(5.0, 2.2, 12.0, mdm)
         allSym[:, 28] = self.genSymFn2(5.0, 2.4, 12.0, mdm)
@@ -765,7 +758,7 @@ class Structure(object):
         allSym[:, 39] = self.genSymFn2(5.0, 4.6, 12.0, mdm)
         allSym[:, 40] = self.genSymFn2(5.0, 4.8, 12.0, mdm)
 
-        print "Working on the symmetry function 3 set..."
+        print("Working on the symmetry function 3 set...")
         allSym[:, 41] = self.genSymFn3(5.0, 1.0, mdm)
         allSym[:, 42] = self.genSymFn3(5.0, 1.5, mdm)
         allSym[:, 43] = self.genSymFn3(5.0, 2.0, mdm)
@@ -775,7 +768,7 @@ class Structure(object):
         allSym[:, 47] = self.genSymFn3(5.0, 4.0, mdm)
         allSym[:, 48] = self.genSymFn3(5.0, 4.5, mdm)
 
-        print "Working on the symmetry function 4 set..."
+        print("Working on the symmetry function 4 set...")
         allSym[:, 49] = self.genSymFn4(5.0, 1.0, 1.0, 0.05, mdm, mdv)
         allSym[:, 50] = self.genSymFn4(5.0, 1.0, 2.0, 0.05, mdm, mdv)
         allSym[:, 51] = self.genSymFn4(5.0, 1.0, 3.0, 0.05, mdm, mdv)
@@ -792,7 +785,7 @@ class Structure(object):
         allSym[:, 62] = self.genSymFn4(5.0, 1.0, 4.0, 0.09, mdm, mdv)
         allSym[:, 63] = self.genSymFn4(5.0, 1.0, 5.0, 0.09, mdm, mdv)
 
-        print "Working on the symmetry function 5 set..."
+        print("Working on the symmetry function 5 set...")
         allSym[:, 64] = self.genSymFn5(5.0, 1.0, 1.0, 0.3, mdm, mdv)
         allSym[:, 65] = self.genSymFn5(5.0, 1.0, 2.0, 0.3, mdm, mdv)
         allSym[:, 66] = self.genSymFn5(5.0, 1.0, 3.0, 0.3, mdm, mdv)
@@ -847,8 +840,8 @@ class Structure(object):
             atomElementList = self.elementNames()
 
         bondingList = collections.defaultdict(dict)
-        for atom1 in xrange(self.numAtoms-1):
-            for atom2 in xrange(atom1 + 1, self.numAtoms):
+        for atom1 in range(self.numAtoms-1):
+            for atom2 in range(atom1 + 1, self.numAtoms):
                 bondDist = (covRads[atomElementList[atom1]] +
                             covRads[atomElementList[atom2]]) * bf
                 if bondDist >= mdm[atom1][atom2]:
@@ -865,10 +858,14 @@ class Structure(object):
         '''
         if bondingList == None:
             bondingList = self.bondingList(bf = bf)
-        return [len(bondingList[i]) for i in xrange(len(bondingList))]
+        return [len(bondingList[i]) for i in range(len(bondingList))]
 
     def toAU(self):
-        pass
+        self.rlm *= co.SI2AU
+        self.cellInfo = self.getCellInfoFromRlm()
+        self.mlr = np.linalg.inv(self.rlm)
+        self.atomCoors *= co.SI2AU
+        return self
 
     def toSI(self):
         '''
@@ -887,7 +884,7 @@ class Structure(object):
         six parameters are the cell information.
         '''
         cellInfo = np.zeros(6)
-        for i in xrange(3):
+        for i in range(3):
             cellInfo[i] = math.sqrt(self.rlm[i][0]*self.rlm[i][0] +
                                     self.rlm[i][1]*self.rlm[i][1] +
                                     self.rlm[i][2]*self.rlm[i][2])
