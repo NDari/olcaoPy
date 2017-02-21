@@ -24,7 +24,7 @@
 import numpy as np
 import re
 import sys
-import olcaoPy.constants as co
+import constants as co
 
 ### Generic functions.
 
@@ -33,17 +33,17 @@ import olcaoPy.constants as co
 def readFile(fileName, splitter = '\s+'):
     """
         This function reads a file, returning a 2D array A(x,y)
-        
+
         x > line number
         y > element number
-        
+
         where the elements in the line are created by splitting the line
         according to the splitter argument. The default values for the splitter
         is one or more spaces.
         """
     array = []
     f = open(fileName, 'r')
-    
+
     # hold all the lines in the file, by reading all of it, and
     # stripping the newline at the end of each line.
     lines = [line.strip() for line in f.readlines()]
@@ -64,17 +64,17 @@ def writeFile(fileName, fileArr, splitter = ' '):
         passed are automatically converted to strings.
         """
     f = open(fileName, 'w')
-    
+
     string = ""
-    
+
     for line in range(len(fileArr)):
         # first, convert all the words to strings.
         l = [str(word) for word in fileArr[line]]
         string += splitter.join(l)
-        
+
         # add the newline before next line
         string += "\n"
-    
+
     f.write(string)
     f.close()
     return
@@ -216,7 +216,7 @@ def SklAtomNames(skl):
             break
     for i in range(numAtoms):
         name      = skl[a+i][0]
-        
+
         # make sure that the name starts with a lower case letter. this is
         # the convension used throughout olcao.
         name      = name[0].lower() + name[1:]
@@ -346,13 +346,13 @@ def ScfvPotCoeffs_up(scfv):
     """
         This function returns the A coefficients for each unique type, as a 2-D array
         A[x][y] where
-        
+
         x > type number
         y > coeffecient number
-        
+
         A is contructed from an array passed to this function which is in turn
         contrusted from reading the scfV.dat file.
-        
+
         This function returns the coeffcients with spin UP. these are used as
         THE coefficients for exchange-correlation functionals that are spinless.
         """
@@ -381,13 +381,13 @@ def ScfvPotCoeffs_dn(scfv):
     """
         This function returns the A coefficients for each unique type, as a 2-D array
         A[x][y] where
-        
+
         x > type number
         y > coeffecient number
-        
+
         A is contructed from an array passed to this function which is in turn
         contrusted from reading the scfV.dat file.
-        
+
         This function returns the coeffcients with spin DOWN. these are used only
         with exchange-correlation functionals that include spin.
         """
@@ -420,14 +420,14 @@ def ScfvPotCoeffs(scfv):
     """
         This function returns the A coefficients for each unique type, as a 3-D array
         A[x][y][z] where
-        
+
         x > type number
         y > 0 for spin up, 1 for spin down
         z > coeffecient number
-        
+
         A is contructed from an array passed to this function which is in turn
         contrusted from reading the scfV.dat file.
-        
+
         """
     # get the number of unique types.
     nTypes = ScfvNumTypes(scfv)
@@ -442,17 +442,17 @@ def ScfvPotCoeffs(scfv):
         totalSpin.append(spinUp[i])
         totalSpin.append(spinDn[i])
         coeffs[i] = totalSpin
-    
+
     return coeffs
 
 def ScfvPotAlphas(scfv):
     """
         This function returns the alphas for each unique type, as a 2-D array
         A[x][y] where
-        
+
         x > type number
         y > alpha number
-        
+
         A is contructed from an array passed to this function which is in turn
         contrusted from reading the scfV.dat file.
         """
@@ -481,10 +481,10 @@ def ScfvFullRhos(scfv):
     """
         This function returns the full rho for each unique type, as a 2-D array
         A[x][y] where
-        
+
         x > type number
         y > full rho
-        
+
         A is contructed from an array passed to this function which is in turn
         contrusted from reading the scfV.dat file.
         """
@@ -513,10 +513,10 @@ def ScfvPartRhos(scfv):
     """
         This function returns the A coefficients for each unique type, as a 2-D array
         A[x][y] where
-        
+
         x > type number
         y > partial rho number
-        
+
         A is contructed from an array passed to this function which is in turn
         contrusted from reading the scfV.dat file. If such array is not passed, it
         is contructed by reading that file.
@@ -551,11 +551,11 @@ def SdatCellVecs(sdat):
     """
         This function returns a 2-D array containing the cell vectors in the
         Cartesian coordinates in this form:
-        
+
         ax ay az
         bx by bz
         cx cy cz
-        
+
         from a 2D array which is passed to this function. The passed array is
         constructed from reading the structure.dat file.
         """
@@ -563,7 +563,7 @@ def SdatCellVecs(sdat):
     cellVecs[0][0:3] = sdat[1][0:3]
     cellVecs[1][0:3] = sdat[2][0:3]
     cellVecs[2][0:3] = sdat[3][0:3]
-    
+
     return cellVecs
 
 def SdatNumAtomSites(sdat):
@@ -713,7 +713,7 @@ def BlBondingArray(babl):
         This function returns a list, containg the atoms to which a certain atom is
         bonded. This information is contained a 2D array passed to this function,
         which is created by reading the bondAnalysis.bl file.
-        
+
         IMPORTANT NOTE: This currently works with only > 4 bonds per atom, OR the new
         bondAnalysis script that Naseer will work on. the new bondAnalysis script will
         output all the bonds in the same single line, instead of the current method of
